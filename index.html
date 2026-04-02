@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VA Combined Rating Calculator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef3f8;
+      margin: 0;
+      padding: 24px;
+      color: #1f2937;
+    }
+
+    .container {
+      max-width: 1150px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #123c69, #1d5fa7);
+      color: white;
+      padding: 28px 30px;
+    }
+
+    .header h1 {
+      margin: 0 0 8px 0;
+      font-size: 30px;
+    }
+
+    .header p {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.5;
+      opacity: 0.95;
+    }
+
+    .content {
+      padding: 28px 30px 34px;
+    }
+
+    .section-title {
+      font-size: 20px;
+      margin: 0 0 14px 0;
+      color: #0f172a;
+    }
+
+    .intro-box {
+      background: #f8fafc;
+      border: 1px solid #dbe6f0;
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-bottom: 22px;
+      line-height: 1.6;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: #f9fbfd;
+      border: 1px solid #d7e3ef;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .card h3 {
+      margin: 0 0 10px 0;
+      font-size: 17px;
+      color: #123c69;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      resize: vertical;
+      font-size: 14px;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+      background: white;
+    }
+
+    .full-width {
+      margin-top: 16px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+      margin-bottom: 26px;
+    }
+
+    button {
+      border: none;
+      border-radius: 9px;
+      padding: 12px 18px;
+      font-size: 15px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .primary {
+      background: #1d5fa7;
+      color: white;
+    }
+
+    .primary:hover {
+      background: #164d89;
+    }
+
+    .secondary {
+      background: #64748b;
+      color: white;
+    }
+
+    .secondary:hover {
+      background: #4b5563;
+    }
+
+    .results {
+      display: none;
+      margin-top: 12px;
+    }
+
+    .result-card {
+      background: #f8fafc;
+      border: 1px solid #dbe6f0;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    .result-card h2 {
+      margin-top: 0;
+      color: #0f172a;
+      font-size: 21px;
+    }
+
+    .step {
+      padding: 10px 12px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      line-height: 1.5;
+    }
+
+    .highlight {
+      background: #eff6ff;
+      border-left: 5px solid #1d5fa7;
+      padding: 14px 16px;
+      border-radius: 10px;
+      margin-top: 12px;
+      font-size: 16px;
+    }
+
+    .final-rating {
+      font-size: 30px;
+      font-weight: bold;
+      color: #0f172a;
+      margin-top: 8px;
+    }
+
+    .small-note {
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.5;
+      margin-top: 10px;
+    }
+
+    .formula {
+      background: #fefce8;
+      border: 1px solid #fde68a;
+      border-radius: 10px;
+      padding: 14px 16px;
+      margin-top: 20px;
+      line-height: 1.6;
+    }
+
+    code {
+      background: #e5e7eb;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    .muted {
+      color: #475569;
+    }
+
+    @media (max-width: 640px) {
+      .header h1 {
+        font-size: 24px;
+      }
+
+      .content {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>VA Combined Rating Calculator</h1>
+      <p>
+        Enter disability percentages by body area. This version applies the bilateral factor
+        for paired upper and lower extremities and shows each calculation step.
+      </p>
+    </div>
+
+    <div class="content">
+      <div class="intro-box">
+        <strong>How to use:</strong><br>
+        Enter ratings as comma-separated values such as <code>30, 20, 10</code>.<br>
+        Use:
+        <ul>
+          <li><strong>Upper Extremities</strong> for left/right arms, shoulders, wrists, hands, etc.</li>
+          <li><strong>Lower Extremities</strong> for left/right hips, knees, ankles, feet, etc.</li>
+          <li><strong>Other Ratings</strong> for all remaining non-bilateral conditions</li>
+        </ul>
+      </div>
+
+      <h2 class="section-title">Enter Ratings</h2>
+
+      <div class="grid">
+        <div class="card">
+          <h3>Left Upper Extremity</h3>
+          <label for="leftUpper">Ratings</label>
+          <textarea id="leftUpper" placeholder="Example: 20, 10"></textarea>
+        </div>
+
+        <div class="card">
+          <h3>Right Upper Extremity</h3>
+          <label for="rightUpper">Ratings</label>
+          <textarea id="rightUpper" placeholder="Example: 30"></textarea>
+        </div>
+
+        <div class="card">
+          <h3>Left Lower Extremity</h3>
+          <label for="leftLower">Ratings</label>
+          <textarea id="leftLower" placeholder="Example: 20, 10"></textarea>
+        </div>
+
+        <div class="card">
+          <h3>Right Lower Extremity</h3>
+          <label for="rightLower">Ratings</label>
+          <textarea id="rightLower" placeholder="Example: 40"></textarea>
+        </div>
+      </div>
+
+      <div class="card full-width">
+        <h3>Other Non-Bilateral Ratings</h3>
+        <label for="otherRatings">Ratings</label>
+        <textarea id="otherRatings" placeholder="Example: 50, 30, 10"></textarea>
+      </div>
+
+      <div class="button-row">
+        <button class="primary" onclick="calculateVA()">Calculate Rating</button>
+        <button class="secondary" onclick="loadExample()">Load Example</button>
+        <button class="secondary" onclick="clearAllFields()">Clear</button>
+      </div>
+
+      <div class="results" id="results"></div>
+
+      <div class="formula">
+        <strong>VA Math Reminder</strong><br>
+        VA math does not add ratings in a simple way. Ratings are combined from highest to lowest using remaining efficiency:
+        <br><br>
+        <code>New Combined = Current Combined + (100 - Current Combined) × Next Rating</code>
+        <br><br>
+        After bilateral factor adjustments, all ratings are combined and the final number is rounded to the nearest 10%.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    function parseRatings(text) {
+      if (!text.trim()) return [];
+      return text
+        .split(',')
+        .map(v => v.trim())
+        .filter(v => v !== '')
+        .map(Number)
+        .filter(v => !isNaN(v) && v >= 0 && v <= 100);
+    }
+
+    function roundWhole(num) {
+      return Math.round(num);
+    }
+
+    function roundTenth(num) {
+      return Math.round(num * 10) / 10;
+    }
+
+    function roundToNearestTen(num) {
+      const remainder = num % 10;
+      return remainder >= 5 ? num + (10 - remainder) : num - remainder;
+    }
+
+    function combineTwo(a, b) {
+      return roundWhole(a + (100 - a) * (b / 100));
+    }
+
+    function buildCombineSteps(ratings) {
+      if (!ratings.length) {
+        return {
+          combined: 0,
+          steps: ['No ratings entered.'],
+          sorted: []
+        };
+      }
+
+      const sorted = [...ratings].sort((a, b) => b - a);
+      let combined = sorted[0];
+      let steps = [`Start with highest rating: ${sorted[0]}%`];
+
+      for (let i = 1; i < sorted.length; i++) {
+        const next = sorted[i];
+        const raw = combined + (100 - combined) * (next / 100);
+        const rounded = roundWhole(raw);
+        steps.push(
+          `Combine ${combined}% with ${next}% → ${combined} + (${100 - combined} × ${next}%) = ${roundTenth(raw)}% → rounded to ${rounded}%`
+        );
+        combined = rounded;
+      }
+
+      return { combined, steps, sorted };
+    }
+
+    function hasCompensableBothSides(left, right) {
+      return left.some(r => r >= 10) && right.some(r => r >= 10);
+    }
+
+    function processBilateralGroup(leftRatings, rightRatings, label) {
+      const groupRatings = [...leftRatings, ...rightRatings];
+      const detail = buildCombineSteps(groupRatings);
+
+      let bilateralApplied = false;
+      let bilateralAmount = 0;
+      let adjustedValue = detail.combined;
+      let summary = '';
+
+      if (groupRatings.length === 0) {
+        summary = `${label}: no ratings entered.`;
+      } else if (hasCompensableBothSides(leftRatings, rightRatings)) {
+        bilateralApplied = true;
+        bilateralAmount = roundTenth(detail.combined * 0.10);
+        adjustedValue = roundTenth(detail.combined + bilateralAmount);
+        summary = `${label}: combined value ${detail.combined}%, plus bilateral factor of ${bilateralAmount}%, equals ${adjustedValue}%.`;
+      } else {
+        summary = `${label}: combined value ${detail.combined}%. Bilateral factor not applied because compensable ratings are not present on both sides.`;
+      }
+
+      return {
+        label,
+        leftRatings,
+        rightRatings,
+        allRatings: groupRatings,
+        combined: detail.combined,
+        steps: detail.steps,
+        sorted: detail.sorted,
+        bilateralApplied,
+        bilateralAmount,
+        adjustedValue,
+        summary
+      };
+    }
+
+    function formatRatings(ratings) {
+      return ratings.length ? ratings.map(r => `${r}%`).join(', ') : 'None';
+    }
+
+    function calculateVA() {
+      const leftUpper = parseRatings(document.getElementById('leftUpper').value);
+      const rightUpper = parseRatings(document.getElementById('rightUpper').value);
+      const leftLower = parseRatings(document.getElementById('leftLower').value);
+      const rightLower = parseRatings(document.getElementById('rightLower').value);
+      const otherRatings = parseRatings(document.getElementById('otherRatings').value);
+
+      const upperGroup = processBilateralGroup(leftUpper, rightUpper, 'Upper Extremities');
+      const lowerGroup = processBilateralGroup(leftLower, rightLower, 'Lower Extremities');
+      const otherGroup = buildCombineSteps(otherRatings);
+
+      let finalComponents = [];
+      let finalSourceNotes = [];
+
+      if (upperGroup.adjustedValue > 0) {
+        finalComponents.push(roundWhole(upperGroup.adjustedValue));
+        finalSourceNotes.push(`Upper extremities adjusted value used in final combination: ${upperGroup.adjustedValue}% → rounded to ${roundWhole(upperGroup.adjustedValue)}%`);
+      }
+
+      if (lowerGroup.adjustedValue > 0) {
+        finalComponents.push(roundWhole(lowerGroup.adjustedValue));
+        finalSourceNotes.push(`Lower extremities adjusted value used in final combination: ${lowerGroup.adjustedValue}% → rounded to ${roundWhole(lowerGroup.adjustedValue)}%`);
+      }
+
+      otherRatings.forEach(r => finalComponents.push(r));
+      if (otherRatings.length) {
+        finalSourceNotes.push(`Other ratings used in final combination: ${formatRatings(otherRatings)}`);
+      }
+
+      const finalProcess = buildCombineSteps(finalComponents);
+      const rawFinal = finalProcess.combined;
+      const finalRounded = roundToNearestTen(rawFinal);
+
+      const results = document.getElementById('results');
+      results.style.display = 'block';
+
+      results.innerHTML = `
+        <div class="result-card">
+          <h2>Input Summary</h2>
+          <div class="step"><strong>Left Upper:</strong> ${formatRatings(leftUpper)}</div>
+          <div class="step"><strong>Right Upper:</strong> ${formatRatings(rightUpper)}</div>
+          <div class="step"><strong>Left Lower:</strong> ${formatRatings(leftLower)}</div>
+          <div class="step"><strong>Right Lower:</strong> ${formatRatings(rightLower)}</div>
+          <div class="step"><strong>Other Ratings:</strong> ${formatRatings(otherRatings)}</div>
+        </div>
+
+        <div class="result-card">
+          <h2>Upper Extremity Calculation</h2>
+          <div class="step"><strong>Ratings Entered:</strong> ${formatRatings(upperGroup.allRatings)}</div>
+          ${upperGroup.steps.map(step => `<div class="step">${step}</div>`).join('')}
+          <div class="highlight">
+            <strong>Upper Extremities Summary:</strong><br>
+            ${upperGroup.summary}
+          </div>
+        </div>
+
+        <div class="result-card">
+          <h2>Lower Extremity Calculation</h2>
+          <div class="step"><strong>Ratings Entered:</strong> ${formatRatings(lowerGroup.allRatings)}</div>
+          ${lowerGroup.steps.map(step => `<div class="step">${step}</div>`).join('')}
+          <div class="highlight">
+            <strong>Lower Extremities Summary:</strong><br>
+            ${lowerGroup.summary}
+          </div>
+        </div>
+
+        <div class="result-card">
+          <h2>Other Ratings Calculation</h2>
+          <div class="step"><strong>Ratings Entered:</strong> ${formatRatings(otherRatings)}</div>
+          ${otherGroup.steps.map(step => `<div class="step">${step}</div>`).join('')}
+          <div class="highlight">
+            <strong>Other Ratings Summary:</strong><br>
+            ${otherRatings.length ? `Combined other ratings value: ${otherGroup.combined}%` : 'No other ratings entered.'}
+          </div>
+        </div>
+
+        <div class="result-card">
+          <h2>Final Combined Rating Calculation</h2>
+          ${finalSourceNotes.map(note => `<div class="step">${note}</div>`).join('')}
+          <div class="step"><strong>Final Components Combined:</strong> ${finalComponents.length ? finalComponents.map(r => `${r}%`).join(', ') : 'None'}</div>
+          ${finalProcess.steps.map(step => `<div class="step">${step}</div>`).join('')}
+          <div class="highlight">
+            <strong>Raw Final Combined Value:</strong> ${rawFinal}%<br>
+            <strong>Rounded to Nearest 10%:</strong>
+            <div class="final-rating">${finalRounded}%</div>
+          </div>
+          <div class="small-note">
+            This calculator is designed as a training and estimation tool. Final VA decisions depend on the official rating decision, applicable regulations, and how VA applies bilateral factor and combined rating rules in the case.
+          </div>
+        </div>
+      `;
+    }
+
+    function loadExample() {
+      document.getElementById('leftUpper').value = '20, 10';
+      document.getElementById('rightUpper').value = '30';
+      document.getElementById('leftLower').value = '20';
+      document.getElementById('rightLower').value = '40, 10';
+      document.getElementById('otherRatings').value = '50, 10';
+      calculateVA();
+    }
+
+    function clearAllFields() {
+      document.getElementById('leftUpper').value = '';
+      document.getElementById('rightUpper').value = '';
+      document.getElementById('leftLower').value = '';
+      document.getElementById('rightLower').value = '';
+      document.getElementById('otherRatings').value = '';
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('results').innerHTML = '';
+    }
+  </script>
+</body>
+</html>
