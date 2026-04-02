@@ -175,6 +175,17 @@
       font-size: 16px;
     }
 
+    .bilateral-box {
+      background: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-left: 5px solid #15803d;
+      padding: 14px 16px;
+      border-radius: 10px;
+      margin-top: 12px;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
     .final-rating {
       font-size: 30px;
       font-weight: bold;
@@ -205,8 +216,9 @@
       font-size: 13px;
     }
 
-    .muted {
-      color: #475569;
+    ul {
+      margin-top: 8px;
+      margin-bottom: 8px;
     }
 
     @media (max-width: 640px) {
@@ -225,19 +237,18 @@
     <div class="header">
       <h1>VA Combined Rating Calculator</h1>
       <p>
-        Enter disability percentages by body area. This version applies the bilateral factor
-        for paired upper and lower extremities and shows each calculation step.
+        Enter disability percentages by body area. This version shows the upper and lower extremity
+        combined values, the bilateral factor amount, the adjusted bilateral values, and each step of the calculation.
       </p>
     </div>
 
     <div class="content">
       <div class="intro-box">
         <strong>How to use:</strong><br>
-        Enter ratings as comma-separated values such as <code>30, 20, 10</code>.<br>
-        Use:
+        Enter ratings as comma-separated values such as <code>30, 20, 10</code>.
         <ul>
-          <li><strong>Upper Extremities</strong> for left/right arms, shoulders, wrists, hands, etc.</li>
-          <li><strong>Lower Extremities</strong> for left/right hips, knees, ankles, feet, etc.</li>
+          <li><strong>Upper Extremities</strong> for left/right arms, shoulders, elbows, wrists, and hands</li>
+          <li><strong>Lower Extremities</strong> for left/right hips, knees, ankles, legs, and feet</li>
           <li><strong>Other Ratings</strong> for all remaining non-bilateral conditions</li>
         </ul>
       </div>
@@ -286,11 +297,12 @@
 
       <div class="formula">
         <strong>VA Math Reminder</strong><br>
-        VA math does not add ratings in a simple way. Ratings are combined from highest to lowest using remaining efficiency:
+        Ratings are combined from highest to lowest using remaining efficiency.
         <br><br>
         <code>New Combined = Current Combined + (100 - Current Combined) × Next Rating</code>
         <br><br>
-        After bilateral factor adjustments, all ratings are combined and the final number is rounded to the nearest 10%.
+        For qualifying paired extremities, the bilateral factor is 10% of the combined value of the paired extremities.
+        That bilateral amount is then added to that extremity group before the final overall combined rating is calculated.
       </div>
     </div>
   </div>
@@ -357,6 +369,7 @@
       const groupRatings = [...leftRatings, ...rightRatings];
       const detail = buildCombineSteps(groupRatings);
 
+      const bilateralEligible = hasCompensableBothSides(leftRatings, rightRatings);
       let bilateralApplied = false;
       let bilateralAmount = 0;
       let adjustedValue = detail.combined;
@@ -364,13 +377,13 @@
 
       if (groupRatings.length === 0) {
         summary = `${label}: no ratings entered.`;
-      } else if (hasCompensableBothSides(leftRatings, rightRatings)) {
+      } else if (bilateralEligible) {
         bilateralApplied = true;
         bilateralAmount = roundTenth(detail.combined * 0.10);
         adjustedValue = roundTenth(detail.combined + bilateralAmount);
-        summary = `${label}: combined value ${detail.combined}%, plus bilateral factor of ${bilateralAmount}%, equals ${adjustedValue}%.`;
+        summary = `${label}: combined ${detail.combined}%, bilateral factor ${bilateralAmount}%, adjusted bilateral value ${adjustedValue}%.`;
       } else {
-        summary = `${label}: combined value ${detail.combined}%. Bilateral factor not applied because compensable ratings are not present on both sides.`;
+        summary = `${label}: combined ${detail.combined}%. Bilateral factor not applied because compensable ratings are not present on both sides.`;
       }
 
       return {
@@ -381,6 +394,7 @@
         combined: detail.combined,
         steps: detail.steps,
         sorted: detail.sorted,
+        bilateralEligible,
         bilateralApplied,
         bilateralAmount,
         adjustedValue,
@@ -390,6 +404,37 @@
 
     function formatRatings(ratings) {
       return ratings.length ? ratings.map(r => `${r}%`).join(', ') : 'None';
+    }
+
+    function renderBilateralBreakdown(group) {
+      if (!group.allRatings.length) {
+        return `
+          <div class="bilateral-box">
+            <strong>${group.label} Bilateral Breakdown</strong><br>
+            No ratings entered.
+          </div>
+        `;
+      }
+
+      if (group.bilateralApplied) {
+        return `
+          <div class="bilateral-box">
+            <strong>${group.label} Bilateral Breakdown</strong><br>
+            Combined paired extremity value: <strong>${group.combined}%</strong><br>
+            Bilateral factor (10% of ${group.combined}%): <strong>${group.bilateralAmount}%</strong><br>
+            Combined value plus bilateral factor: <strong>${group.adjustedValue}%</strong>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="bilateral-box">
+          <strong>${group.label} Bilateral Breakdown</strong><br>
+          Combined paired extremity value: <strong>${group.combined}%</strong><br>
+          Bilateral factor applied: <strong>No</strong><br>
+          Value used in final combination: <strong>${group.adjustedValue}%</strong>
+        </div>
+      `;
     }
 
     function calculateVA() {
@@ -408,12 +453,16 @@
 
       if (upperGroup.adjustedValue > 0) {
         finalComponents.push(roundWhole(upperGroup.adjustedValue));
-        finalSourceNotes.push(`Upper extremities adjusted value used in final combination: ${upperGroup.adjustedValue}% → rounded to ${roundWhole(upperGroup.adjustedValue)}%`);
+        finalSourceNotes.push(
+          `Upper extremities used in final combination: combined ${upperGroup.combined}% + bilateral factor ${upperGroup.bilateralAmount}% = ${upperGroup.adjustedValue}% → rounded to ${roundWhole(upperGroup.adjustedValue)}%`
+        );
       }
 
       if (lowerGroup.adjustedValue > 0) {
         finalComponents.push(roundWhole(lowerGroup.adjustedValue));
-        finalSourceNotes.push(`Lower extremities adjusted value used in final combination: ${lowerGroup.adjustedValue}% → rounded to ${roundWhole(lowerGroup.adjustedValue)}%`);
+        finalSourceNotes.push(
+          `Lower extremities used in final combination: combined ${lowerGroup.combined}% + bilateral factor ${lowerGroup.bilateralAmount}% = ${lowerGroup.adjustedValue}% → rounded to ${roundWhole(lowerGroup.adjustedValue)}%`
+        );
       }
 
       otherRatings.forEach(r => finalComponents.push(r));
@@ -440,8 +489,11 @@
 
         <div class="result-card">
           <h2>Upper Extremity Calculation</h2>
-          <div class="step"><strong>Ratings Entered:</strong> ${formatRatings(upperGroup.allRatings)}</div>
+          <div class="step"><strong>Left Upper Ratings:</strong> ${formatRatings(leftUpper)}</div>
+          <div class="step"><strong>Right Upper Ratings:</strong> ${formatRatings(rightUpper)}</div>
+          <div class="step"><strong>All Upper Extremity Ratings Combined Together:</strong> ${formatRatings(upperGroup.allRatings)}</div>
           ${upperGroup.steps.map(step => `<div class="step">${step}</div>`).join('')}
+          ${renderBilateralBreakdown(upperGroup)}
           <div class="highlight">
             <strong>Upper Extremities Summary:</strong><br>
             ${upperGroup.summary}
@@ -450,8 +502,11 @@
 
         <div class="result-card">
           <h2>Lower Extremity Calculation</h2>
-          <div class="step"><strong>Ratings Entered:</strong> ${formatRatings(lowerGroup.allRatings)}</div>
+          <div class="step"><strong>Left Lower Ratings:</strong> ${formatRatings(leftLower)}</div>
+          <div class="step"><strong>Right Lower Ratings:</strong> ${formatRatings(rightLower)}</div>
+          <div class="step"><strong>All Lower Extremity Ratings Combined Together:</strong> ${formatRatings(lowerGroup.allRatings)}</div>
           ${lowerGroup.steps.map(step => `<div class="step">${step}</div>`).join('')}
+          ${renderBilateralBreakdown(lowerGroup)}
           <div class="highlight">
             <strong>Lower Extremities Summary:</strong><br>
             ${lowerGroup.summary}
@@ -479,7 +534,7 @@
             <div class="final-rating">${finalRounded}%</div>
           </div>
           <div class="small-note">
-            This calculator is designed as a training and estimation tool. Final VA decisions depend on the official rating decision, applicable regulations, and how VA applies bilateral factor and combined rating rules in the case.
+            This calculator is a training and estimation tool. Final VA decisions depend on the official rating decision and application of the combined rating and bilateral factor rules.
           </div>
         </div>
       `;
@@ -506,3 +561,4 @@
   </script>
 </body>
 </html>
+ 
