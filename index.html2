@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VA Combined Rating Calculator - 38 CFR § 4.26(d)</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #eef3f8;
+      margin: 0;
+      padding: 24px;
+      color: #1f2937;
+    }
+
+    .container {
+      max-width: 1240px;
+      margin: 0 auto;
+      background: #ffffff;
+      border-radius: 14px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+
+    .header {
+      background: linear-gradient(135deg, #123c69, #1d5fa7);
+      color: white;
+      padding: 28px 30px;
+    }
+
+    .header h1 {
+      margin: 0 0 8px 0;
+      font-size: 30px;
+    }
+
+    .header p {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.55;
+      opacity: 0.96;
+      max-width: 1000px;
+    }
+
+    .content {
+      padding: 28px 30px 34px;
+    }
+
+    .intro-box, .formula {
+      background: #f8fafc;
+      border: 1px solid #dbe6f0;
+      border-radius: 10px;
+      padding: 16px 18px;
+      margin-bottom: 22px;
+      line-height: 1.6;
+    }
+
+    .formula {
+      background: #fefce8;
+      border-color: #fde68a;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+      margin-bottom: 20px;
+    }
+
+    .card {
+      background: #f9fbfd;
+      border: 1px solid #d7e3ef;
+      border-radius: 12px;
+      padding: 16px;
+    }
+
+    .card h3 {
+      margin: 0 0 10px 0;
+      font-size: 17px;
+      color: #123c69;
+    }
+
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+
+    textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 10px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      resize: vertical;
+      font-size: 14px;
+      box-sizing: border-box;
+      font-family: Arial, sans-serif;
+      background: white;
+    }
+
+    .full-width {
+      margin-top: 16px;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 18px;
+      margin-bottom: 26px;
+    }
+
+    button {
+      border: none;
+      border-radius: 9px;
+      padding: 12px 18px;
+      font-size: 15px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .primary {
+      background: #1d5fa7;
+      color: white;
+    }
+
+    .primary:hover {
+      background: #164d89;
+    }
+
+    .secondary {
+      background: #64748b;
+      color: white;
+    }
+
+    .secondary:hover {
+      background: #4b5563;
+    }
+
+    .results {
+      display: none;
+      margin-top: 12px;
+    }
+
+    .result-card {
+      background: #f8fafc;
+      border: 1px solid #dbe6f0;
+      border-radius: 12px;
+      padding: 18px;
+      margin-bottom: 18px;
+    }
+
+    .result-card h2 {
+      margin-top: 0;
+      color: #0f172a;
+      font-size: 21px;
+    }
+
+    .step {
+      padding: 10px 12px;
+      background: white;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      margin-bottom: 10px;
+      line-height: 1.55;
+    }
+
+    .highlight {
+      background: #eff6ff;
+      border-left: 5px solid #1d5fa7;
+      padding: 14px 16px;
+      border-radius: 10px;
+      margin-top: 12px;
+      font-size: 16px;
+      line-height: 1.7;
+    }
+
+    .success {
+      background: #f0fdf4;
+      border-left: 5px solid #15803d;
+    }
+
+    .warn {
+      background: #fff7ed;
+      border-left: 5px solid #ea580c;
+    }
+
+    .scenario {
+      background: white;
+      border: 1px solid #dbe6f0;
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+
+    .scenario h3 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+      color: #123c69;
+    }
+
+    .final-rating {
+      font-size: 30px;
+      font-weight: bold;
+      color: #0f172a;
+      margin-top: 8px;
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 3px 8px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-left: 6px;
+    }
+
+    .badge-valid {
+      background: #dcfce7;
+      color: #166534;
+    }
+
+    .badge-selected {
+      background: #dbeafe;
+      color: #1d4ed8;
+    }
+
+    .badge-invalid {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+
+    .small-note {
+      font-size: 13px;
+      color: #475569;
+      line-height: 1.55;
+      margin-top: 10px;
+    }
+
+    code {
+      background: #e5e7eb;
+      padding: 2px 5px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+
+    ul {
+      margin-top: 8px;
+      margin-bottom: 8px;
+    }
+
+    @media (max-width: 640px) {
+      .header h1 {
+        font-size: 24px;
+      }
+
+      .content {
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>VA Combined Rating Calculator</h1>
+      <p>
+        Refined to model 38 CFR § 4.26, including § 4.26(d). This version tests valid bilateral scenarios,
+        shows when upper and lower extremities are combined together for one bilateral factor, and selects the most favorable result.
+      </p>
+    </div>
+
+    <div class="content">
+      <div class="intro-box">
+        <strong>How to use:</strong><br>
+        Enter ratings as comma-separated values, such as <code>30, 20, 10</code>.
+        <ul>
+          <li><strong>Left / Right Upper Extremity</strong>: arms, shoulders, elbows, wrists, hands</li>
+          <li><strong>Left / Right Lower Extremity</strong>: hips, thighs, knees, ankles, feet</li>
+          <li><strong>Other Ratings</strong>: all remaining non-extremity or non-bilateral ratings</li>
+        </ul>
+      </div>
+
+      <div class="formula">
+        <strong>38 CFR § 4.26(d) logic used here:</strong><br>
+        1. Identify compensable bilateral candidates in paired extremities.<br>
+        2. Test valid bilateral subsets for upper only, lower only, or combined upper and lower extremities.<br>
+        3. Add 10% of the combined bilateral extremity value.<br>
+        4. Combine excluded extremity ratings and other ratings separately.<br>
+        5. Select the most favorable final result.
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h3>Left Upper Extremity</h3>
+          <label for="leftUpper">Ratings</label>
+          <textarea id="leftUpper" placeholder="Example: 20, 10"></textarea>
+        </div>
+
+        <div class="card">
+          <h3>Right Upper Extremity</h3>
+          <label for="rightUpper">Ratings</label>
+          <textarea id="rightUpper" placeholder="Example: 30"></textarea>
+        </div>
+
+        <div class="card">
+          <h3>Left Lower Extremity</h3>
+          <label for="leftLower">Ratings</label>
+          <textarea id="leftLower" placeholder="Example: 20"></textarea>
+        </div>
+
+        <div class="card">
+          <h3>Right Lower Extremity</h3>
+          <label for="rightLower">Ratings</label>
+          <textarea id="rightLower" placeholder="Example: 40, 10"></textarea>
+        </div>
+      </div>
+
+      <div class="card full-width">
+        <h3>Other Non-Bilateral Ratings</h3>
+        <label for="otherRatings">Ratings</label>
+        <textarea id="otherRatings" placeholder="Example: 50, 30, 10"></textarea>
+      </div>
+
+      <div class="button-row">
+        <button class="primary" onclick="calculateVA()">Calculate Rating</button>
+        <button class="secondary" onclick="loadExample()">Load Example</button>
+        <button class="secondary" onclick="clearAllFields()">Clear</button>
+      </div>
+
+      <div class="results" id="results"></div>
+    </div>
+  </div>
+
+  <script>
+    function parseRatings(text, groupKey) {
+      if (!text.trim()) return [];
+      return text
+        .split(',')
+        .map(v => v.trim())
+        .filter(v => v !== '')
+        .map(Number)
+        .filter(v => !isNaN(v) && v >= 0 && v <= 100)
+        .map((rating, index) => ({
+          id: `${groupKey}-${index + 1}`,
+          rating,
+          group: groupKey,
+          label: `${groupKey} ${index + 1}`
+        }));
+    }
+
+    function roundWhole(num) {
+      return Math.round(num);
+    }
+
+    function roundTenth(num) {
+      return Math.round(num * 10) / 10;
+    }
+
+    function roundToNearestTen(num) {
+      const remainder = num % 10;
+      return remainder >= 5 ? num + (10 - remainder) : num - remainder;
+    }
+
+    function combineRaw(a, b) {
+      return a + (100 - a) * (b / 100);
+    }
+
+    function buildCombineSteps(items) {
+      if (!items.length) {
+        return {
+          combined: 0,
+          steps: ['No ratings entered.'],
+          sorted: []
+        };
+      }
+
+      const sorted = [...items].sort((a, b) => b.rating - a.rating);
+      let combined = sorted[0].rating;
+      let steps = [`Start with highest rating: ${sorted[0].rating}% (${sorted[0].label})`];
+
+      for (let i = 1; i < sorted.length; i++) {
+        const next = sorted[i];
+        const raw = combineRaw(combined, next.rating);
+        const rounded = roundWhole(raw);
+        steps.push(
+          `Combine ${combined}% with ${next.rating}% (${next.label}) → ${combined} + (${100 - combined} × ${next.rating}%) = ${roundTenth(raw)}% → rounded to ${rounded}%`
+        );
+        combined = rounded;
+      }
+
+      return { combined, steps, sorted };
+    }
+
+    function formatItems(items) {
+      return items.length ? items.map(item => `${item.rating}% (${item.label})`).join(', ') : 'None';
+    }
+
+    function hasCompensableInGroup(items, groupKey) {
+      return items.some(item => item.group === groupKey && item.rating >= 10);
+    }
+
+    function validateSubset(subset) {
+      const upperValid = hasCompensableInGroup(subset, 'LU') && hasCompensableInGroup(subset, 'RU');
+      const lowerValid = hasCompensableInGroup(subset, 'LL') && hasCompensableInGroup(subset, 'RL');
+
+      if (!subset.length) {
+        return {
+          valid: true,
+          label: 'No bilateral factor',
+          reason: 'Baseline scenario with no bilateral factor applied.'
+        };
+      }
+
+      if (upperValid && lowerValid) {
+        return {
+          valid: true,
+          label: 'Combined upper and lower extremities',
+          reason: 'The included subset has compensable disabilities in both upper extremities and both lower extremities, so one combined bilateral factor may be applied.'
+        };
+      }
+
+      if (upperValid) {
+        return {
+          valid: true,
+          label: 'Upper extremities only',
+          reason: 'The included subset has compensable disabilities in both upper extremities, so the bilateral factor may be applied to the upper extremities.'
+        };
+      }
+
+      if (lowerValid) {
+        return {
+          valid: true,
+          label: 'Lower extremities only',
+          reason: 'The included subset has compensable disabilities in both lower extremities, so the bilateral factor may be applied to the lower extremities.'
+        };
+      }
+
+      return {
+        valid: false,
+        label: 'Invalid subset',
+        reason: 'The subset does not contain compensable disability in each extremity of an eligible pair.'
+      };
+    }
+
+    function powerset(items) {
+      const results = [];
+      const total = 1 << items.length;
+      for (let mask = 0; mask < total; mask++) {
+        const subset = [];
+        for (let i = 0; i < items.length; i++) {
+          if (mask & (1 << i)) subset.push(items[i]);
+        }
+        results.push(subset);
+      }
+      return results;
+    }
+
+    function buildScenarios(extremityItems, otherItems) {
+      const validScenarios = [];
+      const validationLog = [];
+      const subsets = powerset(extremityItems);
+
+      subsets.forEach(subset => {
+        const validation = validateSubset(subset);
+        const includedIds = new Set(subset.map(item => item.id));
+        const excluded = extremityItems.filter(item => !includedIds.has(item.id));
+        const key = subset.map(item => item.id).sort().join('|') || 'none';
+
+        const scenarioRecord = {
+          key,
+          included: subset,
+          excluded,
+          otherItems,
+          validation
+        };
+
+        validationLog.push(scenarioRecord);
+        if (validation.valid) {
+          validScenarios.push(scenarioRecord);
+        }
+      });
+
+      const uniqueValid = [];
+      const seenValid = new Set();
+      for (const scenario of validScenarios) {
+        if (seenValid.has(scenario.key)) continue;
+        seenValid.add(scenario.key);
+        uniqueValid.push(scenario);
+      }
+
+      const uniqueValidationLog = [];
+      const seenAll = new Set();
+      for (const scenario of validationLog) {
+        if (seenAll.has(scenario.key)) continue;
+        seenAll.add(scenario.key);
+        uniqueValidationLog.push(scenario);
+      }
+
+      return {
+        validScenarios: uniqueValid,
+        validationLog: uniqueValidationLog
+      };
+    }
+
+    function evaluateScenario(scenario) {
+      const bilateralProcess = buildCombineSteps(scenario.included);
+      const bilateralBase = bilateralProcess.combined;
+      const bilateralFactor = scenario.included.length ? roundTenth(bilateralBase * 0.10) : 0;
+      const bilateralAdjusted = scenario.included.length ? roundTenth(bilateralBase + bilateralFactor) : 0;
+
+      const finalComponents = [];
+      if (scenario.included.length) {
+        finalComponents.push({
+          id: 'BILAT',
+          rating: roundWhole(bilateralAdjusted),
+          group: 'BILAT',
+          label: 'Bilateral-adjusted extremity value'
+        });
+      }
+
+      finalComponents.push(...scenario.excluded);
+      finalComponents.push(...scenario.otherItems);
+
+      const finalProcess = buildCombineSteps(finalComponents);
+      const rawFinal = finalProcess.combined;
+      const roundedFinal = roundToNearestTen(rawFinal);
+
+      return {
+        ...scenario,
+        bilateralProcess,
+        bilateralBase,
+        bilateralFactor,
+        bilateralAdjusted,
+        finalComponents,
+        finalProcess,
+        rawFinal,
+        roundedFinal
+      };
+    }
+
+    function chooseBestScenario(results) {
+      return [...results].sort((a, b) => {
+        if (b.roundedFinal !== a.roundedFinal) return b.roundedFinal - a.roundedFinal;
+        if (b.rawFinal !== a.rawFinal) return b.rawFinal - a.rawFinal;
+        return a.validation.label.localeCompare(b.validation.label);
+      })[0];
+    }
+
+    function add426dText(results, best) {
+      const baseline = results.find(result => result.key === 'none');
+
+      return results.map(result => {
+        let comparison = '';
+        if (result.key === 'none') {
+          comparison = 'Baseline scenario for comparison.';
+        } else if (baseline) {
+          if (result.roundedFinal > baseline.roundedFinal || (result.roundedFinal === baseline.roundedFinal && result.rawFinal > baseline.rawFinal)) {
+            comparison = 'This scenario is more favorable than the no-bilateral baseline.';
+          } else if (result.roundedFinal === baseline.roundedFinal && result.rawFinal === baseline.rawFinal) {
+            comparison = 'This scenario is equal to the no-bilateral baseline.';
+          } else {
+            comparison = 'This scenario is less favorable than the no-bilateral baseline.';
+          }
+        }
+
+        if (result.key === best.key) {
+          comparison += result.excluded.length
+            ? ' § 4.26(d) is triggered because excluding one or more bilateral disabilities produced the most favorable result.'
+            : ' Including all eligible bilateral disabilities produced the most favorable result.';
+        }
+
+        return {
+          ...result,
+          comparison
+        };
+      });
+    }
+
+    function renderAllScenarioValidation(validationLog, selectedKey) {
+      return validationLog.map((scenario, index) => `
+            <div class="scenario">
+              <h3>
+                Scenario ${index + 1}: ${scenario.validation.label}
+                <span class="badge ${scenario.validation.valid ? 'badge-valid' : 'badge-invalid'}">${scenario.validation.valid ? 'Valid' : 'Invalid'}</span>
+                ${scenario.key === selectedKey ? '<span class="badge badge-selected">Selected</span>' : ''}
+              </h3>
+              <div class="step"><strong>Included in bilateral factor:</strong> ${formatItems(scenario.included)}</div>
+              <div class="step"><strong>Excluded and combined separately:</strong> ${formatItems(scenario.excluded)}</div>
+              <div class="step"><strong>Validation reason:</strong> ${scenario.validation.reason}</div>
+            </div>
+          `).join('');
+    }
+
+    function calculateVA() {
+      const leftUpper = parseRatings(document.getElementById('leftUpper').value, 'LU');
+      const rightUpper = parseRatings(document.getElementById('rightUpper').value, 'RU');
+      const leftLower = parseRatings(document.getElementById('leftLower').value, 'LL');
+      const rightLower = parseRatings(document.getElementById('rightLower').value, 'RL');
+      const otherRatings = parseRatings(document.getElementById('otherRatings').value, 'OTH');
+
+      const extremityItems = [...leftUpper, ...rightUpper, ...leftLower, ...rightLower];
+      if (extremityItems.length > 15) {
+        alert('Please limit extremity ratings to 15 or fewer entries for this version.');
+        return;
+      }
+
+      const scenarioBuild = buildScenarios(extremityItems, otherRatings);
+      const scenarios = scenarioBuild.validScenarios.map(evaluateScenario);
+      const best = chooseBestScenario(scenarios);
+      const evaluated = add426dText(scenarios, best);
+      const validationLog = scenarioBuild.validationLog;
+      const selected = evaluated.find(item => item.key === best.key) || best;
+
+      const results = document.getElementById('results');
+      results.style.display = 'block';
+
+      results.innerHTML = `
+        <div class="result-card">
+          <h2>Input Summary</h2>
+          <div class="step"><strong>Left Upper:</strong> ${formatItems(leftUpper)}</div>
+          <div class="step"><strong>Right Upper:</strong> ${formatItems(rightUpper)}</div>
+          <div class="step"><strong>Left Lower:</strong> ${formatItems(leftLower)}</div>
+          <div class="step"><strong>Right Lower:</strong> ${formatItems(rightLower)}</div>
+          <div class="step"><strong>Other Ratings:</strong> ${formatItems(otherRatings)}</div>
+          <div class="step"><strong>Valid scenarios tested:</strong> ${evaluated.length}</div>
+          <div class="step"><strong>Total subsets validated under § 4.26(d):</strong> ${validationLog.length}</div>
+        </div>
+
+        <div class="result-card">
+          <h2>Most Favorable Result</h2>
+          <div class="highlight success">
+            <strong>Selected scenario:</strong> ${selected.validation.label}<br>
+            <strong>Combined extremity value before bilateral factor:</strong> ${selected.bilateralBase}%<br>
+            <strong>Bilateral factor:</strong> ${selected.bilateralFactor}%<br>
+            <strong>Combined extremity value after bilateral factor:</strong> ${selected.bilateralAdjusted}%<br>
+            <strong>Final VA combined rating:</strong>
+            <div class="final-rating">${selected.roundedFinal}%</div>
+          </div>
+          <div class="highlight ${selected.excluded.length ? 'warn' : 'success'}">
+            <strong>§ 4.26(d) Triggered:</strong> ${selected.excluded.length ? 'Yes' : 'No'}<br>
+            ${selected.excluded.length
+              ? 'One or more extremity disabilities were excluded from the bilateral-factor calculation because doing so produced the more favorable overall result.'
+              : 'Including all eligible extremity disabilities in the bilateral-factor calculation produced the more favorable result.'}
+          </div>
+        </div>
+
+        <div class="result-card">
+          <h2>Step-by-Step for Selected Scenario</h2>
+          <div class="step"><strong>Included in bilateral calculation:</strong> ${formatItems(selected.included)}</div>
+          <div class="step"><strong>Excluded and combined separately:</strong> ${formatItems(selected.excluded)}</div>
+          <div class="step"><strong>Other ratings combined separately:</strong> ${formatItems(otherRatings)}</div>
+
+          ${selected.bilateralProcess.steps.map(step => `<div class="step">${step}</div>`).join('')}
+
+          <div class="highlight">
+            <strong>Bilateral Calculation</strong><br>
+            Combined extremity value: <strong>${selected.bilateralBase}%</strong><br>
+            Bilateral factor (10%): <strong>${selected.bilateralFactor}%</strong><br>
+            Combined value plus bilateral factor: <strong>${selected.bilateralAdjusted}%</strong><br>
+            Rounded value used as one disability: <strong>${selected.included.length ? roundWhole(selected.bilateralAdjusted) + '%' : 'N/A'}</strong>
+          </div>
+
+          <div class="step"><strong>Final components combined:</strong> ${formatItems(selected.finalComponents)}</div>
+          ${selected.finalProcess.steps.map(step => `<div class="step">${step}</div>`).join('')}
+
+          <div class="highlight">
+            <strong>Raw final combined value:</strong> ${selected.rawFinal}%<br>
+            <strong>Rounded to nearest 10%:</strong>
+            <div class="final-rating">${selected.roundedFinal}%</div>
+          </div>
+        </div>
+
+        <div class="result-card">
+          <h2>§ 4.26(d) Validation</h2>
+          <div class="step">
+            Every possible extremity subset was validated. Invalid subsets are shown below so the user can see why they were excluded from bilateral-factor consideration.
+          </div>
+          ${renderAllScenarioValidation(validationLog, selected.key)}
+        </div>
+
+        <div class="result-card">
+          <h2>Important Note</h2>
+          <div class="small-note">
+            This calculator is a training and estimation tool. It models scenario testing under § 4.26(d), but the final VA outcome still depends on the underlying rating decision and whether each disability is treated as eligible for the bilateral factor.
+          </div>
+        </div>
+      `;
+    }
+
+    function loadExample() {
+      document.getElementById('leftUpper').value = '20, 10';
+      document.getElementById('rightUpper').value = '30';
+      document.getElementById('leftLower').value = '20';
+      document.getElementById('rightLower').value = '40, 10';
+      document.getElementById('otherRatings').value = '50, 10';
+      calculateVA();
+    }
+
+    function clearAllFields() {
+      document.getElementById('leftUpper').value = '';
+      document.getElementById('rightUpper').value = '';
+      document.getElementById('leftLower').value = '';
+      document.getElementById('rightLower').value = '';
+      document.getElementById('otherRatings').value = '';
+      document.getElementById('results').style.display = 'none';
+      document.getElementById('results').innerHTML = '';
+    }
+  </script>
+</body>
+</html>
