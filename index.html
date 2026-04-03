@@ -580,6 +580,14 @@
 
     function renderScenarioSummary(evaluated, selectedKey) {
       const validOnly = evaluated.filter(scenario => scenario.validation.valid);
+
+      // Ensure the selected (most favorable) scenario appears first
+      validOnly.sort((a,b)=>{
+        if(a.key===selectedKey) return -1;
+        if(b.key===selectedKey) return 1;
+        return b.roundedFinal - a.roundedFinal;
+      });
+
       return validOnly.map((scenario, index) => {
         const triggerText = scenario.excluded.length
           ? 'Excluded one or more extremity ratings from the bilateral calculation.'
