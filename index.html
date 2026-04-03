@@ -578,17 +578,41 @@
       });
     }
 
-    function renderAllScenarioValidation(validationLog, selectedKey) {
-      return validationLog.map((scenario, index) => `
+    function renderScenarioSummary(evaluated, selectedKey) {
+      const validOnly = evaluated.filter(scenario => scenario.validation.valid);
+      return validOnly.map((scenario, index) => {
+        const triggerText = scenario.excluded.length
+          ? 'Excluded one or more extremity ratings from the bilateral calculation.'
+          : 'Used all eligible extremity ratings in the bilateral calculation.';
+
+        return `
             <div class="scenario">
               <h3>
                 Scenario ${index + 1}: ${scenario.validation.label}
-                <span class="badge ${scenario.validation.valid ? 'badge-valid' : 'badge-invalid'}">${scenario.validation.valid ? 'Valid' : 'Invalid'}</span>
+                <span class="badge badge-valid">Valid</span>
                 ${scenario.key === selectedKey ? '<span class="badge badge-selected">Selected</span>' : ''}
               </h3>
               <div class="step"><strong>Included in bilateral factor:</strong> ${formatItems(scenario.included)}</div>
               <div class="step"><strong>Excluded and combined separately:</strong> ${formatItems(scenario.excluded)}</div>
-              <div class="step"><strong>Validation reason:</strong> ${scenario.validation.reason}</div>
+              <div class="step"><strong>Bilateral calculation:</strong> ${scenario.bilateralBase}% + ${scenario.bilateralFactor}% = ${scenario.bilateralAdjusted}%</div>
+              <div class="step"><strong>Final combined rating:</strong> ${scenario.roundedFinal}%</div>
+              <div class="step"><strong>Scenario summary:</strong> ${triggerText} ${scenario.comparison}</div>
+            </div>
+          `;
+      }).join('');
+    }
+
+    function renderInvalidScenarioSummary(validationLog) {
+      const invalidOnly = validationLog.filter(scenario => !scenario.validation.valid);
+      if (!invalidOnly.length) {
+        return '<div class="step"><strong>Invalid subsets:</strong> None</div>';
+      }
+
+      return invalidOnly.map((scenario, index) => `
+            <div class="scenario">
+              <h3>Invalid Subset ${index + 1}<span class="badge badge-invalid">Invalid</span></h3>
+              <div class="step"><strong>Included in attempted bilateral factor:</strong> ${formatItems(scenario.included)}</div>
+              <div class="step"><strong>Why excluded:</strong> ${scenario.validation.reason}</div>
             </div>
           `).join('');
     }
@@ -673,11 +697,19 @@
         </div>
 
         <div class="result-card">
-          <h2>§ 4.26(d) Validation</h2>
+          <h2>Valid Scenario Summary</h2>
           <div class="step">
-            Every possible extremity subset was validated. Invalid subsets are shown below so the user can see why they were excluded from bilateral-factor consideration.
+            This section summarizes only the valid scenarios that were actually compared to determine the most favorable outcome under § 4.26(d).
           </div>
-          ${renderAllScenarioValidation(validationLog, selected.key)}
+          ${renderScenarioSummary(evaluated, selected.key)}
+        </div>
+
+        <div class="result-card">
+          <h2>Invalid Subset Summary</h2>
+          <div class="step">
+            These subsets were reviewed but were not valid for the bilateral factor because they did not meet the paired-extremity requirements.
+          </div>
+          ${renderInvalidScenarioSummary(validationLog)}
         </div>
 
         <div class="result-card">
