@@ -401,47 +401,87 @@
       return items.some(item => item.group === groupKey && item.rating >= 10);
     }
 
-    function validateSubset(subset) {
+    function getScenarioType(subset) {
       const upperValid = hasCompensableInGroup(subset, 'LU') && hasCompensableInGroup(subset, 'RU');
       const lowerValid = hasCompensableInGroup(subset, 'LL') && hasCompensableInGroup(subset, 'RL');
 
-      if (!subset.length) {
+      if (!subset.length) return 'none';
+      if (upperValid && lowerValid) return 'combined';
+      if (upperValid) return 'upper';
+      if (lowerValid) return 'lower';
+      return 'invalid';
+    }
+
+    function validateSubset(subset) {
+      const type = getScenarioType(subset);
+
+      if (type === 'none') {
         return {
           valid: true,
-          label: 'No bilateral factor',
+          type,
+          label: 'Baseline comparison (no bilateral factor)',
           reason: 'Baseline scenario with no bilateral factor applied.'
         };
       }
 
-      if (upperValid && lowerValid) {
+      if (type === 'combined') {
         return {
           valid: true,
+          type,
           label: 'Combined upper and lower extremities',
           reason: 'The included subset has compensable disabilities in both upper extremities and both lower extremities, so one combined bilateral factor may be applied.'
         };
       }
 
-      if (upperValid) {
+      if (type === 'upper') {
         return {
           valid: true,
+          type,
           label: 'Upper extremities only',
-          reason: 'The included subset has compensable disabilities in both upper extremities, so the bilateral factor may be applied to the upper extremities.'
+          reason: 'The included subset has compensable disabilities in both upper extremities, so the bilateral factor may be applied to the upper extremities only.'
         };
       }
 
-      if (lowerValid) {
+      if (type === 'lower') {
         return {
           valid: true,
+          type,
           label: 'Lower extremities only',
-          reason: 'The included subset has compensable disabilities in both lower extremities, so the bilateral factor may be applied to the lower extremities.'
+          reason: 'The included subset has compensable disabilities in both lower extremities, so the bilateral factor may be applied to the lower extremities only.'
         };
       }
 
       return {
         valid: false,
+        type,
         label: 'Invalid subset',
         reason: 'The subset does not contain compensable disability in each extremity of an eligible pair.'
       };
+    }
+
+    function normalizeScenarioItems(subset, allExtremityItems, validation) {
+      if (!validation.valid || validation.type === 'none') {
+        return {
+          included: [],
+          excluded: [...allExtremityItems]
+        };
+      }
+
+      let allowedGroups = [];
+      if (validation.type === 'upper') allowedGroups = ['LU', 'RU'];
+      if (validation.type === 'lower') allowedGroups = ['LL', 'RL'];
+      if (validation.type === 'combined') allowedGroups = ['LU', 'RU', 'LL', 'RL'];
+
+      const subsetIds = new Set(subset.map(item => item.id));
+      const included = subset.filter(item => allowedGroups.includes(item.group));
+      const includedIds = new Set(included.map(item => item.id));
+
+      const excluded = allExtremityItems.filter(item => {
+        if (!subsetIds.has(item.id)) return true;
+        return !includedIds.has(item.id);
+      });
+
+      return { included, excluded };
     }
 
     function powerset(items) {
@@ -458,50 +498,43 @@
     }
 
     function buildScenarios(extremityItems, otherItems) {
-      const validScenarios = [];
+      const scenarios = [];
       const validationLog = [];
       const subsets = powerset(extremityItems);
 
       subsets.forEach(subset => {
         const validation = validateSubset(subset);
-        const includedIds = new Set(subset.map(item => item.id));
-        const excluded = extremityItems.filter(item => !includedIds.has(item.id));
-        const key = subset.map(item => item.id).sort().join('|') || 'none';
+        const normalized = normalizeScenarioItems(subset, extremityItems, validation);
 
-        const scenarioRecord = {
+        validationLog.push({
+          attempted: subset,
+          included: normalized.included,
+          excluded: normalized.excluded,
+          validation
+        });
+
+        if (!validation.valid) return;
+
+        const key = normalized.included.map(item => item.id).sort().join('|') || 'none';
+        scenarios.push({
           key,
-          included: subset,
-          excluded,
+          attempted: subset,
+          included: normalized.included,
+          excluded: normalized.excluded,
           otherItems,
           validation
-        };
-
-        validationLog.push(scenarioRecord);
-        if (validation.valid) {
-          validScenarios.push(scenarioRecord);
-        }
+        });
       });
 
-      const uniqueValid = [];
-      const seenValid = new Set();
-      for (const scenario of validScenarios) {
-        if (seenValid.has(scenario.key)) continue;
-        seenValid.add(scenario.key);
-        uniqueValid.push(scenario);
+      const unique = [];
+      const seen = new Set();
+      for (const scenario of scenarios) {
+        if (seen.has(scenario.key)) continue;
+        seen.add(scenario.key);
+        unique.push(scenario);
       }
 
-      const uniqueValidationLog = [];
-      const seenAll = new Set();
-      for (const scenario of validationLog) {
-        if (seenAll.has(scenario.key)) continue;
-        seenAll.add(scenario.key);
-        uniqueValidationLog.push(scenario);
-      }
-
-      return {
-        validScenarios: uniqueValid,
-        validationLog: uniqueValidationLog
-      };
+      return { scenarios: unique, validationLog };
     }
 
     function evaluateScenario(scenario) {
@@ -580,12 +613,11 @@
 
     function renderScenarioSummary(evaluated, selectedKey) {
       const validOnly = evaluated.filter(scenario => scenario.validation.valid);
-
-      // Ensure the selected (most favorable) scenario appears first
-      validOnly.sort((a,b)=>{
-        if(a.key===selectedKey) return -1;
-        if(b.key===selectedKey) return 1;
-        return b.roundedFinal - a.roundedFinal;
+      validOnly.sort((a, b) => {
+        if (a.key === selectedKey) return -1;
+        if (b.key === selectedKey) return 1;
+        if (b.roundedFinal !== a.roundedFinal) return b.roundedFinal - a.roundedFinal;
+        return b.rawFinal - a.rawFinal;
       });
 
       return validOnly.map((scenario, index) => {
@@ -594,35 +626,35 @@
           : 'Used all eligible extremity ratings in the bilateral calculation.';
 
         return `
-            <div class="scenario">
-              <h3>
-                Scenario ${index + 1}: ${scenario.validation.label}
-                <span class="badge badge-valid">Valid</span>
-                ${scenario.key === selectedKey ? '<span class="badge badge-selected">Selected</span>' : ''}
-              </h3>
-              <div class="step"><strong>Included in bilateral factor:</strong> ${formatItems(scenario.included)}</div>
-              <div class="step"><strong>Excluded and combined separately:</strong> ${formatItems(scenario.excluded)}</div>
-              <div class="step"><strong>Bilateral calculation:</strong> ${scenario.bilateralBase}% + ${scenario.bilateralFactor}% = ${scenario.bilateralAdjusted}%</div>
-              <div class="step"><strong>Final combined rating:</strong> ${scenario.roundedFinal}%</div>
-              <div class="step"><strong>Scenario summary:</strong> ${triggerText} ${scenario.comparison}</div>
-            </div>
-          `;
+          <div class="scenario">
+            <h3>
+              Scenario ${index + 1}: ${scenario.validation.label}
+              <span class="badge badge-valid">Valid</span>
+              ${scenario.key === selectedKey ? '<span class="badge badge-selected">Selected</span>' : ''}
+            </h3>
+            <div class="step"><strong>Included in bilateral factor:</strong> ${formatItems(scenario.included)}</div>
+            <div class="step"><strong>Excluded and combined separately:</strong> ${formatItems(scenario.excluded)}</div>
+            <div class="step"><strong>Bilateral calculation:</strong> ${scenario.bilateralBase}% + ${scenario.bilateralFactor}% = ${scenario.bilateralAdjusted}%</div>
+            <div class="step"><strong>Final combined rating:</strong> ${scenario.roundedFinal}%</div>
+            <div class="step"><strong>Scenario summary:</strong> ${triggerText} ${scenario.comparison}</div>
+          </div>
+        `;
       }).join('');
     }
 
     function renderInvalidScenarioSummary(validationLog) {
-      const invalidOnly = validationLog.filter(scenario => !scenario.validation.valid);
+      const invalidOnly = validationLog.filter(entry => !entry.validation.valid);
       if (!invalidOnly.length) {
         return '<div class="step"><strong>Invalid subsets:</strong> None</div>';
       }
 
-      return invalidOnly.map((scenario, index) => `
-            <div class="scenario">
-              <h3>Invalid Subset ${index + 1}<span class="badge badge-invalid">Invalid</span></h3>
-              <div class="step"><strong>Included in attempted bilateral factor:</strong> ${formatItems(scenario.included)}</div>
-              <div class="step"><strong>Why excluded:</strong> ${scenario.validation.reason}</div>
-            </div>
-          `).join('');
+      return invalidOnly.map((entry, index) => `
+        <div class="scenario">
+          <h3>Invalid Subset ${index + 1}</h3>
+          <div class="step"><strong>Included in attempted bilateral factor:</strong> ${formatItems(entry.attempted)}</div>
+          <div class="step"><strong>Why excluded:</strong> ${entry.validation.reason}</div>
+        </div>
+      `).join('');
     }
 
     function calculateVA() {
@@ -638,11 +670,10 @@
         return;
       }
 
-      const scenarioBuild = buildScenarios(extremityItems, otherRatings);
-      const scenarios = scenarioBuild.validScenarios.map(evaluateScenario);
-      const best = chooseBestScenario(scenarios);
-      const evaluated = add426dText(scenarios, best);
-      const validationLog = scenarioBuild.validationLog;
+      const { scenarios, validationLog } = buildScenarios(extremityItems, otherRatings);
+      const evaluatedBase = scenarios.map(evaluateScenario);
+      const best = chooseBestScenario(evaluatedBase);
+      const evaluated = add426dText(evaluatedBase, best);
       const selected = evaluated.find(item => item.key === best.key) || best;
 
       const results = document.getElementById('results');
@@ -656,8 +687,7 @@
           <div class="step"><strong>Left Lower:</strong> ${formatItems(leftLower)}</div>
           <div class="step"><strong>Right Lower:</strong> ${formatItems(rightLower)}</div>
           <div class="step"><strong>Other Ratings:</strong> ${formatItems(otherRatings)}</div>
-          <div class="step"><strong>Valid scenarios tested:</strong> ${evaluated.length}</div>
-          <div class="step"><strong>Total subsets validated under § 4.26(d):</strong> ${validationLog.length}</div>
+          <div class="step"><strong>Scenarios Tested:</strong> ${evaluated.length}</div>
         </div>
 
         <div class="result-card">
