@@ -1,31 +1,31 @@
 import { useState, useMemo } from "react";
-
+ 
 const RATING_OPTIONS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 const GROUPS = [
   { id: "upper", label: "Upper Extremities" },
   { id: "lower", label: "Lower Extremities" },
 ];
-
+ 
 let _id = 0;
 const uid = () => ++_id;
-
+ 
 // FIX #1 — share the exact same array reference for both live and committed
 // so isDirty starts as false (same IDs, same values)
 const INITIAL = [{ id: uid(), name: "Disability 1", rating: 30, bilateral: false, extremityGroup: "upper", side: "left" }];
-
+ 
 // ─── VA Core Math ─────────────────────────────────────────────────────────────
-
+ 
 function combineRaw(ratings) {
   if (!ratings.length) return 0;
   let rem = 100;
   for (const r of [...ratings].sort((a, b) => b - a)) rem *= (1 - r / 100);
   return 100 - rem;
 }
-
+ 
 function rnd10(v) {
   return v % 10 >= 5 ? Math.ceil(v / 10) * 10 : Math.floor(v / 10) * 10;
 }
-
+ 
 // ─── §4.26 / §4.26(d) Sub-Group Evaluator ────────────────────────────────────
 //
 // FIX #2 — correct §4.26(d) interpretation:
@@ -45,24 +45,24 @@ function rnd10(v) {
 //   B) suppressed_global — §4.26(d): a 100% single disability exists globally
 //   C) suppressed_overflow — bilateral sub-group combined × 1.10 ≥ 100% (math cap)
 //   D) applyFactor  — all checks pass, factor applied
-
+ 
 function evalSubGroup(subset, has100Global) {
   const hasLeft   = subset.some(d => d.side === "left");
   const hasRight  = subset.some(d => d.side === "right");
   const bothSides = hasLeft && hasRight;
-
+ 
   const raw      = combineRaw(subset.map(d => d.rating));
   const factored = raw * 1.1;
   const overflow = factored >= 100;   // math cap, distinct from §4.26(d)
-
+ 
   const oneSided          = !bothSides;
   const suppressed_global   = bothSides && has100Global;             // §4.26(d)
   const suppressed_overflow = bothSides && !has100Global && overflow; // math cap
   const applyFactor         = bothSides && !has100Global && !overflow;
-
+ 
   const eff     = applyFactor ? factored : suppressed_overflow ? 100 : raw;
   const rounded = Math.round(eff);
-
+ 
   return {
     subset, bothSides, oneSided,
     raw, factored, overflow,
@@ -71,9 +71,9 @@ function evalSubGroup(subset, has100Global) {
     has100Global,
   };
 }
-
+ 
 // ─── Full Configuration Evaluator ────────────────────────────────────────────
-
+ 
 function evalFullConfig(subResults, nonBil) {
   const items = [
     ...subResults.map(s => ({
@@ -85,7 +85,7 @@ function evalFullConfig(subResults, nonBil) {
     })),
     ...nonBil.map(d => ({ label: d.name || "Unnamed", value: d.rating })),
   ].filter(x => x.value > 0).sort((a, b) => b.value - a.value);
-
+ 
   let rem = 100;
   const steps = [];
   for (const it of items) {
@@ -96,9 +96,9 @@ function evalFullConfig(subResults, nonBil) {
   const raw = 100 - rem;
   return { items, steps, raw, final: rnd10(raw) };
 }
-
+ 
 // ─── Set Partition & Cartesian Product Helpers ───────────────────────────────
-
+ 
 function allPartitions(arr) {
   if (!arr.length) return [[]];
   const [h, ...t] = arr;
@@ -111,11 +111,11 @@ function allPartitions(arr) {
   }
   return out;
 }
-
+ 
 function cartProd(arrs) {
   return arrs.reduce((a, b) => a.flatMap(x => b.map(y => [...x, y])), [[]]);
 }
-
+ 
 // ─── Optimization Engine ─────────────────────────────────────────────────────
 //
 // Enumerate every set-partition of each bilateral group, take the Cartesian
@@ -125,32 +125,32 @@ function cartProd(arrs) {
 // FIX #3 — when §4.26(d) applies globally (has100Global === true), all
 // configurations produce identical results (no bilateral factor anywhere),
 // so we short-circuit optimization and return a single unified config.
-
+ 
 function findOptimal(disabilities) {
   const nonBil = disabilities.filter(d => !d.bilateral);
-
+ 
   // FIX #2 — compute global §4.26(d) flag
   const has100Global = disabilities.some(d => d.rating === 100);
-
+ 
   const byGroup = {};
   for (const d of disabilities.filter(d => d.bilateral))
     (byGroup[d.extremityGroup] = byGroup[d.extremityGroup] || []).push(d);
-
+ 
   const gids = Object.keys(byGroup);
-
+ 
   // No bilateral disabilities at all — pure combination
   if (!gids.length) {
     const overall = evalFullConfig([], nonBil);
     return { optimal: { subResults: [], overall, combo: [] }, uniqueRows: [], nonBil, total: 1, gids, groupSets: [], has100Global, optimizationApplies: false };
   }
-
+ 
   const groupSets = gids.map(gid => ({
     gid,
     label: GROUPS.find(g => g.id === gid)?.label || gid,
     parts: allPartitions(byGroup[gid]).slice(0, 300),
     dis: byGroup[gid],
   }));
-
+ 
   // FIX #3 — short-circuit: §4.26(d) globally blocks factor, no split helps
   if (has100Global) {
     const unifiedSubs = groupSets.flatMap(g => [g.dis]).map(s => evalSubGroup(s, true));
@@ -165,13 +165,13 @@ function findOptimal(disabilities) {
       improved: false,
     };
   }
-
+ 
   // Full optimization — iterate all configurations
   const combos = cartProd(groupSets.map(g => g.parts.map(p => ({ gid: g.gid, label: g.label, p }))));
-
+ 
   let bestFinal = -1, bestRaw = -1, optimal = null;
   const seen = new Map();
-
+ 
   for (const combo of combos) {
     const subResults = combo.flatMap(c => c.p).map(s => evalSubGroup(s, has100Global));
     const overall    = evalFullConfig(subResults, nonBil);
@@ -182,38 +182,38 @@ function findOptimal(disabilities) {
       bestFinal = overall.final; bestRaw = overall.raw; optimal = row;
     }
   }
-
+ 
   const uniqueRows = [...seen.values()]
     .sort((a, b) => b.overall.final - a.overall.final || b.overall.raw - a.overall.raw)
     .slice(0, 10);
-
+ 
   // Unified baseline: all disabilities in each group together as one sub-group
   const unifiedCombo = groupSets.map(g => ({ gid: g.gid, label: g.label, p: [g.dis] }));
   const unifiedSubs  = unifiedCombo.flatMap(c => c.p).map(s => evalSubGroup(s, has100Global));
   const unifiedRow   = { combo: unifiedCombo, subResults: unifiedSubs, overall: evalFullConfig(unifiedSubs, nonBil) };
-
+ 
   const improved = optimal && (
     optimal.overall.final > unifiedRow.overall.final ||
     (optimal.overall.final === unifiedRow.overall.final && optimal.overall.raw > unifiedRow.overall.raw + 0.001)
   );
-
+ 
   return {
     optimal, uniqueRows, unifiedRow, groupSets, nonBil,
     total: combos.length, gids, has100Global,
     optimizationApplies: true, improved,
   };
 }
-
+ 
 // ─── Component ────────────────────────────────────────────────────────────────
-
+ 
 export default function VACalculator() {
   // FIX #1 — share the same array for initial live and committed state
   // so isDirty === false on mount
   const [live, setLive]        = useState(INITIAL);
   const [committed, setCommit] = useState(INITIAL);
-
+ 
   const isDirty = JSON.stringify(live) !== JSON.stringify(committed);
-
+ 
   const add    = () => setLive(p => [...p, { id: uid(), name: `Disability ${p.length + 1}`, rating: 10, bilateral: false, extremityGroup: "upper", side: "left" }]);
   const remove = (id) => setLive(p => p.filter(d => d.id !== id));
   const upd    = (id, f, v) => setLive(p => p.map(d => d.id === id ? { ...d, [f]: v } : d));
@@ -222,17 +222,17 @@ export default function VACalculator() {
     setLive(f); setCommit(f);
   };
   const recalc = () => setCommit(live);
-
+ 
   const data = useMemo(() => {
     const active = committed.filter(d => d.rating > 0);
     if (!active.length) return null;
     return findOptimal(active);
   }, [committed]);
-
+ 
   const hasBilateral = !!data?.gids?.length;
   const opt          = data?.optimal;
   const stepBase     = hasBilateral ? 1 : 0;
-
+ 
   return (
     <div style={{ fontFamily: "'DM Mono','Courier New',monospace", minHeight: "100vh", background: "#0d1117", color: "#e6edf3" }}>
       <style>{`
@@ -318,9 +318,9 @@ export default function VACalculator() {
         .note{font-size:10px;color:#484f58;margin-top:20px;line-height:1.8}
         @media(max-width:600px){.drow{grid-template-columns:1fr 70px auto auto}.bpanel{grid-template-columns:1fr}.hero{font-size:52px}}
       `}</style>
-
+ 
       <div className="pg">
-
+ 
         {/* ── Banner ── */}
         <div className="banner">
           <div className="shield">🎖️</div>
@@ -329,7 +329,7 @@ export default function VACalculator() {
             <div className="bsub">38 CFR §§ 4.25 · 4.26 · §4.26(d) · Optimal Bilateral Configuration</div>
           </div>
         </div>
-
+ 
         {/* ── Input ── */}
         <div className="slbl">Service-Connected Disabilities</div>
         <div className="card">
@@ -379,23 +379,23 @@ export default function VACalculator() {
             <button className="btn recalc" onClick={recalc}>⟳ RECALCULATE</button>
           )}
         </div>
-
+ 
         <div className="callout">
           <strong>Optimization:</strong> When bilateral disabilities are present and §4.26(d) does not apply, the calculator tests every valid sub-grouping and selects the one yielding the highest combined rating per 38 CFR § 4.26.
         </div>
-
+ 
         {/* ── Empty state ── */}
         {!data && (
           <div style={{ textAlign: "center", color: "#8b949e", padding: "40px 0", fontSize: 13, letterSpacing: 1 }}>
             Add at least one disability with a rating above 0% to calculate.
           </div>
         )}
-
+ 
         {/* ── Results ── */}
         {data && opt && (
           <div className="results" style={{ opacity: isDirty ? 0.45 : 1, transition: "opacity .3s" }}>
             {isDirty && <div className="stale">● Stale — recalculate</div>}
-
+ 
             {/* Hero */}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 14 }}>
               <div>
@@ -415,9 +415,9 @@ export default function VACalculator() {
                 </div>
               )}
             </div>
-
+ 
             <hr className="divider" />
-
+ 
             {/* ── §4.26(d) Global Notice ── */}
             {data.has100Global && hasBilateral && (
               <div className="warn">
@@ -427,12 +427,12 @@ export default function VACalculator() {
                 Optimization is not performed — all configurations yield identical results.
               </div>
             )}
-
+ 
             {/* ── Optimization analysis ── */}
             {hasBilateral && data.optimizationApplies && (
               <>
                 <div className="slbl" style={{ marginBottom: 12 }}>§ 4.26 Optimization Analysis</div>
-
+ 
                 {data.improved ? (
                   <div className="improve">
                     <strong>⬆ Optimization improved the rating:</strong> The unified grouping yields{" "}
@@ -447,7 +447,7 @@ export default function VACalculator() {
                     <strong>{opt.overall.final}%</strong>.
                   </div>
                 )}
-
+ 
                 {/* Comparison table */}
                 <div className="sblock gold">
                   <div className="stitle">
@@ -520,14 +520,14 @@ export default function VACalculator() {
                 <hr className="divider" />
               </>
             )}
-
+ 
             {/* ── Step 1: Bilateral sub-groups with full §4.26(d) validation ── */}
             {hasBilateral && opt.subResults.length > 0 && (
               <>
                 <div className="slbl" style={{ marginBottom: 12 }}>
                   Step 1 — Bilateral Sub-Groups & §4.26(d) Validation
                 </div>
-
+ 
                 {data.groupSets.map(gs => {
                   const groupSubs = opt.subResults.filter(s =>
                     s.subset.some(d => d.extremityGroup === gs.gid));
@@ -538,7 +538,7 @@ export default function VACalculator() {
                       : s.suppressed_global ? "#5a2020"
                       : s.suppressed_overflow ? "#3a2800"
                       : "#2a3a4a";
-
+ 
                     return (
                       <div key={`${gs.gid}-${si}`}>
                         {/* Per-case notice banners */}
@@ -563,7 +563,7 @@ export default function VACalculator() {
                             requires both left and right disabilities in the same group.
                           </div>
                         )}
-
+ 
                         <div className="sblock" style={{ borderColor }}>
                           <div className="stitle">
                             <span>
@@ -578,7 +578,7 @@ export default function VACalculator() {
                               {s.oneSided             && <span className="tag b">Unpaired</span>}
                             </span>
                           </div>
-
+ 
                           {s.subset.map(d => (
                             <div className="srow" key={d.id}>
                               <span className="sl">{d.name} <span style={{ color: "#484f58" }}>({d.side})</span></span>
@@ -592,11 +592,11 @@ export default function VACalculator() {
                             <span className="sl">Combined (whole-person method)</span>
                             <span className="sv">{s.raw.toFixed(2)}%</span>
                           </div>
-
+ 
                           {/* §4.26(d) Validation Block */}
                           <div className="vblock">
                             <div className="vtitle">§ 4.26(d) Validation — {s.applyFactor ? "All Checks Passed" : "Factor Suppressed"}</div>
-
+ 
                             {/* Check 1: Both sides */}
                             <div className="vrow">
                               <span className="vl">Check 1 — Both sides of paired extremity present?</span>
@@ -604,7 +604,7 @@ export default function VACalculator() {
                                 {[...new Set(s.subset.map(d => d.side))].join(" + ")} → {s.bothSides ? "✓ PASS" : "✗ FAIL — factor N/A"}
                               </span>
                             </div>
-
+ 
                             {/* Check 2: Global 100% (§4.26(d) proper) */}
                             <div className="vrow">
                               <span className="vl">
@@ -620,7 +620,7 @@ export default function VACalculator() {
                                 </span>
                               )}
                             </div>
-
+ 
                             {/* Check 3: Factor arithmetic */}
                             <div className="vrow">
                               <span className="vl">Check 3 — Factor arithmetic: {s.raw.toFixed(2)}% × 1.10</span>
@@ -630,7 +630,7 @@ export default function VACalculator() {
                                 <span className="vv info">= {s.factored.toFixed(2)}%</span>
                               )}
                             </div>
-
+ 
                             {/* Check 4: Math cap */}
                             <div className="vrow">
                               <span className="vl">Check 4 — Result &lt; 100%? (mathematical cap)</span>
@@ -643,7 +643,7 @@ export default function VACalculator() {
                                 </span>
                               )}
                             </div>
-
+ 
                             {/* Verdict */}
                             <div className="vrow">
                               <span className="vl" style={{ color: "#e6edf3", fontWeight: 500 }}>Verdict</span>
@@ -658,7 +658,7 @@ export default function VACalculator() {
                               </span>
                             </div>
                           </div>
-
+ 
                           {/* Result rows */}
                           {s.applyFactor && (
                             <div className="srow" style={{ marginTop: 5 }}>
@@ -685,7 +685,7 @@ export default function VACalculator() {
                 })}
               </>
             )}
-
+ 
             {/* ── Overall combination ── */}
             <div className="slbl" style={{ marginBottom: 12 }}>
               Step {1 + stepBase} — Overall Combined Rating (38 CFR § 4.25)
@@ -705,7 +705,7 @@ export default function VACalculator() {
                 </div>
               ))}
             </div>
-
+ 
             {/* ── Rounding ── */}
             <div className="slbl" style={{ marginBottom: 12 }}>
               Step {2 + stepBase} — Rounding (38 CFR § 4.25)
@@ -724,7 +724,7 @@ export default function VACalculator() {
               </div>
               <div className="srow"><span className="sl">Final combined rating</span><span className="sv g">{opt.overall.final}%</span></div>
             </div>
-
+ 
             <div className="callout" style={{ marginBottom: 0, marginTop: 10 }}>
               <strong>§4.26(d) Regulatory Basis:</strong> 38 CFR § 4.26(d) — "The bilateral factor is not applicable
               when there is a 100 percent evaluation based on 1 disability." This is a global rule: any single disability
@@ -734,7 +734,7 @@ export default function VACalculator() {
             </div>
           </div>
         )}
-
+ 
         <div className="note">
           Informational only. For official ratings consult the VA or an accredited VSO/claims agent.
           References: 38 CFR § 4.25 (combined ratings), § 4.26 (bilateral factor), § 4.26(d) (factor limitation).
@@ -743,3 +743,4 @@ export default function VACalculator() {
     </div>
   );
 }
+ 
