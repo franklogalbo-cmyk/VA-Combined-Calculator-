@@ -1,4 +1,17 @@
-import { useState, useMemo } from "react";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>VA Combined Rating Calculator</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+  <script type="text/babel">
+const { useState, useMemo } = React;
  
 const RATING_OPTIONS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
 const GROUPS = [
@@ -206,7 +219,7 @@ function findOptimal(disabilities) {
  
 // ─── Component ────────────────────────────────────────────────────────────────
  
-export default function VACalculator() {
+function VACalculator() {
   // FIX #1 — share the same array for initial live and committed state
   // so isDirty === false on mount
   const [live, setLive]        = useState(INITIAL);
@@ -744,3 +757,10 @@ export default function VACalculator() {
   );
 }
  
+
+const root = ReactDOM.createRoot(document.getElementById('root'));
+root.render(<VACalculator />);
+
+  </script>
+</body>
+</html>
