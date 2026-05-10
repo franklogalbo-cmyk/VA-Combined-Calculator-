@@ -1,766 +1,1194 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VA Combined Rating Calculator</title>
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VA Combined Rating Calculator — 38 CFR §§ 4.25–4.26</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* ─── RESET ──────────────────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+/* ─── TOKENS ─────────────────────────────────────────────────────────────── */
+:root {
+–bg:         #f0f2f5;
+–surface:    #ffffff;
+–surface2:   #f8f9fb;
+–border:     #dde1e8;
+–border-strong: #c4cad5;
+
+–navy:       #1a2742;
+–navy-mid:   #2c3e6b;
+–text:       #1a2742;
+–text-mid:   #4a5568;
+–text-light: #7a8699;
+–text-xlight:#a0aab8;
+
+–blue:       #1d6fdb;
+–blue-light: #e8f1fc;
+–blue-border:#b3cef5;
+
+–green:      #0f8a47;
+–green-light:#e6f5ee;
+–green-border:#89d4ad;
+
+–amber:      #c47d0a;
+–amber-light:#fff4e0;
+–amber-border:#f5c96a;
+
+–red:        #c0392b;
+–red-light:  #fdf0ef;
+–red-border: #f0a49e;
+
+–slate:      #5a6780;
+–slate-light:#eef0f4;
+–slate-border:#c4cad5;
+
+–mono: “IBM Plex Mono”, monospace;
+–sans: “DM Sans”, sans-serif;
+
+–shadow-sm: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+–shadow:    0 4px 12px rgba(0,0,0,0.10), 0 2px 4px rgba(0,0,0,0.06);
+–shadow-lg: 0 8px 24px rgba(0,0,0,0.12), 0 4px 8px rgba(0,0,0,0.08);
+}
+
+/* ─── BASE ───────────────────────────────────────────────────────────────── */
+html { font-size: 16px; }
+body {
+font-family: var(–sans);
+background: var(–bg);
+color: var(–text);
+min-height: 100vh;
+padding: 24px 16px 72px;
+}
+
+/* ─── LAYOUT ─────────────────────────────────────────────────────────────── */
+.wrap { max-width: 720px; margin: 0 auto; }
+
+/* ─── PAGE HEADER ────────────────────────────────────────────────────────── */
+.page-header {
+text-align: center;
+margin-bottom: 20px;
+}
+.page-header h1 {
+font-size: 1.5rem;
+font-weight: 800;
+color: var(–navy);
+letter-spacing: -0.02em;
+}
+.page-header p {
+font-family: var(–mono);
+font-size: 0.7rem;
+color: var(–text-light);
+margin-top: 4px;
+letter-spacing: 0.04em;
+}
+
+/* ─── CARDS ──────────────────────────────────────────────────────────────── */
+.card {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 10px;
+padding: 20px;
+margin-bottom: 14px;
+box-shadow: var(–shadow-sm);
+}
+.card-title {
+font-size: 0.7rem;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.12em;
+color: var(–text-light);
+border-bottom: 1px solid var(–border);
+padding-bottom: 10px;
+margin-bottom: 16px;
+font-family: var(–mono);
+}
+
+/* ─── SCORE HEADER ───────────────────────────────────────────────────────── */
+.score-header {
+background: var(–navy);
+border-radius: 12px;
+margin-bottom: 14px;
+box-shadow: var(–shadow-lg);
+overflow: hidden;
+display: flex;
+align-items: stretch;
+}
+
+.score-gauge-col {
+flex: 0 0 auto;
+width: 190px;
+background: var(–navy-mid);
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+padding: 22px 16px 18px;
+border-right: 1px solid rgba(255,255,255,0.08);
+}
+.gauge-svg { width: 100%; max-width: 155px; }
+
+.score-big {
+font-family: var(–mono);
+font-weight: 700;
+font-size: 3.2rem;
+letter-spacing: -3px;
+line-height: 1;
+margin-top: -12px;
+transition: color 0.3s;
+}
+.score-raw {
+font-family: var(–mono);
+font-size: 0.62rem;
+color: rgba(255,255,255,0.4);
+margin-top: 5px;
+text-align: center;
+}
+
+.score-meta-col {
+flex: 1;
+padding: 20px 22px 18px;
+display: flex;
+flex-direction: column;
+gap: 12px;
+}
+.score-app-name {
+font-size: 1.1rem;
+font-weight: 800;
+color: #ffffff;
+letter-spacing: -0.01em;
+}
+.score-cfr {
+font-family: var(–mono);
+font-size: 0.6rem;
+color: rgba(255,255,255,0.35);
+letter-spacing: 0.06em;
+margin-top: -8px;
+}
+
+.stat-row { display: flex; gap: 20px; flex-wrap: wrap; }
+.stat { display: flex; flex-direction: column; gap: 1px; }
+.stat-val {
+font-family: var(–mono);
+font-size: 1.6rem;
+font-weight: 700;
+color: #ffffff;
+line-height: 1;
+}
+.stat-lbl {
+font-family: var(–mono);
+font-size: 0.55rem;
+color: rgba(255,255,255,0.4);
+text-transform: uppercase;
+letter-spacing: 0.08em;
+}
+
+/* § 4.26(d) badge inside score header */
+.d426-header-badge {
+font-family: var(–mono);
+font-size: 0.7rem;
+font-weight: 600;
+padding: 7px 11px;
+border-radius: 6px;
+border: 1px solid;
+line-height: 1.45;
+max-width: 100%;
+}
+.d426-applied    { background: rgba(196,125,10,0.18); border-color: rgba(196,125,10,0.5); color: #f5c96a; }
+.d426-ok         { background: rgba(15,138,71,0.18);  border-color: rgba(15,138,71,0.5);  color: #4dd98a; }
+.d426-na         { background: rgba(255,255,255,0.05); border-color: rgba(255,255,255,0.12); color: rgba(255,255,255,0.35); }
+
+/* ─── CALCULATION BREAKDOWN ──────────────────────────────────────────────── */
+.calc-card {
+background: var(–surface);
+border: 1px solid var(–border);
+border-radius: 10px;
+margin-bottom: 14px;
+box-shadow: var(–shadow-sm);
+overflow: hidden;
+}
+.calc-title {
+font-family: var(–mono);
+font-size: 0.7rem;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.12em;
+color: var(–text-light);
+padding: 12px 20px;
+border-bottom: 1px solid var(–border);
+background: var(–surface2);
+}
+.calc-empty {
+font-family: var(–mono);
+font-size: 0.78rem;
+color: var(–text-xlight);
+padding: 18px 20px;
+font-style: italic;
+}
+
+/* Step rows */
+.step {
+display: flex;
+border-bottom: 1px solid var(–border);
+}
+.step:last-child { border-bottom: none; }
+
+.step-bar { width: 4px; flex-shrink: 0; }
+.bar-blue   { background: var(–blue); }
+.bar-green  { background: var(–green); }
+.bar-amber  { background: var(–amber); }
+.bar-slate  { background: var(–slate-border); }
+
+.step-body {
+flex: 1;
+padding: 12px 18px;
+}
+.step-head {
+display: flex;
+align-items: center;
+gap: 9px;
+flex-wrap: wrap;
+margin-bottom: 5px;
+}
+.step-label {
+font-family: var(–mono);
+font-size: 0.68rem;
+font-weight: 700;
+text-transform: uppercase;
+letter-spacing: 0.08em;
+}
+.lbl-blue  { color: var(–blue); }
+.lbl-green { color: var(–green); }
+.lbl-amber { color: var(–amber); }
+.lbl-slate { color: var(–slate); }
+
+.step-detail {
+font-family: var(–mono);
+font-size: 0.72rem;
+color: var(–text-mid);
+line-height: 1.7;
+word-break: break-word;
+}
+
+/* Status badges */
+.badge {
+font-family: var(–mono);
+font-size: 0.6rem;
+font-weight: 700;
+letter-spacing: 0.09em;
+padding: 3px 9px;
+border-radius: 4px;
+border: 1px solid;
+white-space: nowrap;
+}
+.badge-applied { background: var(–amber-light); border-color: var(–amber-border); color: var(–amber); }
+.badge-ok      { background: var(–green-light); border-color: var(–green-border); color: var(–green); }
+.badge-na      { background: var(–slate-light); border-color: var(–slate-border); color: var(–slate); }
+.badge-warn    { background: var(–red-light);   border-color: var(–red-border);   color: var(–red);   }
+
+/* § 4.26(d) row gets highlighted background */
+.step-d426-applied { background: var(–amber-light); }
+.step-d426-ok      { background: var(–green-light); }
+
+/* ─── FORM ───────────────────────────────────────────────────────────────── */
+.field-row { display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field-grow  { flex: 2; min-width: 0; }
+.field-fixed { flex: 0 0 115px; }
+
+.field-label {
+font-size: 0.72rem;
+font-weight: 700;
+color: var(–text-mid);
+letter-spacing: 0.02em;
+}
+
+input[type=“text”], select, textarea {
+background: var(–surface);
+border: 1.5px solid var(–border-strong);
+border-radius: 7px;
+color: var(–text);
+font-family: var(–sans);
+font-size: 0.95rem;
+font-weight: 500;
+padding: 10px 12px;
+outline: none;
+width: 100%;
+transition: border-color 0.15s, box-shadow 0.15s;
+}
+input[type=“text”]:focus,
+select:focus,
+textarea:focus {
+border-color: var(–blue);
+box-shadow: 0 0 0 3px rgba(29,111,219,0.12);
+}
+input.err { border-color: var(–red); }
+.err-txt {
+font-size: 0.68rem;
+color: var(–red);
+font-weight: 600;
+}
+
+.check-row {
+display: flex;
+align-items: flex-start;
+gap: 10px;
+margin-bottom: 10px;
+cursor: pointer;
+font-size: 0.92rem;
+font-weight: 500;
+color: var(–text);
+line-height: 1.45;
+}
+input[type=“checkbox”] {
+width: 17px; height: 17px;
+margin-top: 1px;
+accent-color: var(–blue);
+cursor: pointer;
+flex-shrink: 0;
+}
+.check-hint { color: var(–text-light); font-size: 0.82rem; font-weight: 400; }
+
+textarea { resize: vertical; line-height: 1.6; }
+
+/* ─── BUTTONS ────────────────────────────────────────────────────────────── */
+.btn {
+font-family: var(–sans);
+font-weight: 700;
+font-size: 0.9rem;
+padding: 11px 18px;
+border-radius: 8px;
+cursor: pointer;
+border: none;
+display: inline-flex;
+align-items: center;
+gap: 7px;
+transition: filter 0.15s, box-shadow 0.15s;
+letter-spacing: 0.01em;
+}
+.btn:hover { filter: brightness(1.06); }
+.btn:active { filter: brightness(0.96); }
+
+.btn-add {
+background: var(–navy);
+color: #ffffff;
+width: 100%;
+justify-content: center;
+margin-top: 14px;
+box-shadow: var(–shadow-sm);
+font-size: 0.95rem;
+}
+.btn-copy {
+background: var(–blue);
+color: #ffffff;
+flex: 1;
+justify-content: center;
+box-shadow: var(–shadow-sm);
+}
+.btn-copy.done { background: var(–green); }
+.btn-reset {
+background: var(–surface2);
+color: var(–text-mid);
+border: 1.5px solid var(–border-strong);
+}
+.btn-reset:hover { color: var(–red); border-color: var(–red-border); background: var(–red-light); }
+
+.action-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+
+/* ─── ENTRY LIST ─────────────────────────────────────────────────────────── */
+.entry-row {
+display: flex;
+align-items: center;
+gap: 11px;
+padding: 10px 0;
+border-bottom: 1px solid var(–border);
+}
+.entry-row:last-child { border-bottom: none; }
+
+.entry-pct {
+font-family: var(–mono);
+font-weight: 700;
+font-size: 1.2rem;
+min-width: 52px;
+flex-shrink: 0;
+letter-spacing: -0.5px;
+}
+.entry-info { flex: 1; min-width: 0; }
+.entry-name {
+font-size: 0.95rem;
+font-weight: 600;
+color: var(–text);
+white-space: nowrap;
+overflow: hidden;
+text-overflow: ellipsis;
+}
+.entry-tags {
+display: flex;
+flex-wrap: wrap;
+gap: 5px;
+margin-top: 4px;
+align-items: center;
+}
+.ext-lbl {
+font-family: var(–mono);
+font-size: 0.6rem;
+color: var(–text-xlight);
+}
+.tag {
+font-family: var(–mono);
+font-size: 0.6rem;
+font-weight: 700;
+letter-spacing: 0.06em;
+padding: 2px 7px;
+border-radius: 4px;
+border: 1px solid;
+}
+.tag-green { background: var(–green-light); border-color: var(–green-border); color: var(–green); }
+.tag-amber { background: var(–amber-light); border-color: var(–amber-border); color: var(–amber); }
+.tag-slate { background: var(–slate-light); border-color: var(–slate-border); color: var(–slate); }
+
+.icon-btn {
+background: var(–surface2);
+border: 1.5px solid var(–border);
+cursor: pointer;
+padding: 6px;
+border-radius: 6px;
+display: flex;
+align-items: center;
+color: var(–text-light);
+flex-shrink: 0;
+transition: all 0.15s;
+}
+.icon-btn-edit:hover { color: var(–blue); border-color: var(–blue-border); background: var(–blue-light); }
+.icon-btn-del:hover  { color: var(–red);  border-color: var(–red-border);  background: var(–red-light);  }
+
+/* ─── INLINE EDIT ────────────────────────────────────────────────────────── */
+.edit-block {
+background: var(–blue-light);
+border: 1.5px solid var(–blue-border);
+border-radius: 8px;
+padding: 14px;
+margin: 6px 0 8px;
+}
+.edit-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+
+.btn-sm {
+font-family: var(–sans);
+font-weight: 700;
+font-size: 0.82rem;
+padding: 7px 14px;
+border-radius: 6px;
+cursor: pointer;
+border: 1.5px solid;
+display: inline-flex;
+align-items: center;
+gap: 5px;
+transition: filter 0.15s;
+}
+.btn-sm:hover { filter: brightness(0.95); }
+.btn-save   { background: var(–green-light); border-color: var(–green-border); color: var(–green); }
+.btn-cancel { background: var(–surface);     border-color: var(–border-strong); color: var(–text-mid); }
+.btn-del    { background: var(–red-light);   border-color: var(–red-border);   color: var(–red); margin-left: auto; }
+
+/* ─── INFO BOX ───────────────────────────────────────────────────────────── */
+.info-box {
+font-family: var(–mono);
+font-size: 0.7rem;
+color: #1555a0;
+background: var(–blue-light);
+border: 1px solid var(–blue-border);
+border-radius: 7px;
+padding: 9px 12px;
+line-height: 1.6;
+margin-top: 12px;
+}
+
+/* ─── REGULATORY LEGEND ──────────────────────────────────────────────────── */
+.leg-row { display: flex; gap: 12px; margin-bottom: 9px; align-items: flex-start; }
+.leg-row:last-child { margin-bottom: 0; }
+.leg-cite {
+font-family: var(–mono);
+font-size: 0.65rem;
+font-weight: 700;
+color: var(–blue);
+min-width: 66px;
+flex-shrink: 0;
+letter-spacing: 0.03em;
+padding-top: 1px;
+}
+.leg-text {
+font-size: 0.78rem;
+color: var(–text-mid);
+line-height: 1.6;
+}
+
+/* ─── FOOTER ─────────────────────────────────────────────────────────────── */
+.footer {
+text-align: center;
+font-family: var(–mono);
+font-size: 0.6rem;
+color: var(–text-xlight);
+margin-top: 12px;
+line-height: 1.8;
+letter-spacing: 0.03em;
+}
+
+/* ─── RESPONSIVE ─────────────────────────────────────────────────────────── */
+@media (max-width: 500px) {
+.score-gauge-col { width: 140px; }
+.score-big { font-size: 2.4rem; }
+.field-fixed { flex: 0 0 95px; }
+.score-meta-col { padding: 16px 16px 14px; }
+}
+</style>
+
 </head>
 <body>
-  <div id="root"></div>
-  <script type="text/babel">
-const { useState, useMemo } = React;
- 
-const RATING_OPTIONS = [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100];
-const GROUPS = [
-  { id: "upper", label: "Upper Extremities" },
-  { id: "lower", label: "Lower Extremities" },
-];
- 
-let _id = 0;
-const uid = () => ++_id;
- 
-// FIX #1 — share the exact same array reference for both live and committed
-// so isDirty starts as false (same IDs, same values)
-const INITIAL = [{ id: uid(), name: "Disability 1", rating: 30, bilateral: false, extremityGroup: "upper", side: "left" }];
- 
-// ─── VA Core Math ─────────────────────────────────────────────────────────────
- 
-function combineRaw(ratings) {
-  if (!ratings.length) return 0;
-  let rem = 100;
-  for (const r of [...ratings].sort((a, b) => b - a)) rem *= (1 - r / 100);
-  return 100 - rem;
+<div class="wrap">
+
+  <!-- PAGE HEADER -->
+
+  <div class="page-header">
+    <h1>VA Combined Rating Calculator</h1>
+    <p>38 CFR §§ 4.25 – 4.26 &nbsp;·&nbsp; as amended 88 FR 22917 (Apr 14, 2023)</p>
+  </div>
+
+  <!-- ══ SCORE HEADER ══════════════════════════════════════════════════════ -->
+
+  <div class="score-header">
+    <div class="score-gauge-col">
+      <svg class="gauge-svg" viewBox="0 0 160 90">
+        <path d="M8,80 A72,72 0 0,1 152,80" fill="none" stroke="rgba(255,255,255,0.1)" stroke-width="13" stroke-linecap="round"/>
+        <path id="gaugeFill" d="M8,80 A72,72 0 0,1 152,80" fill="none" stroke="#4dd98a"
+              stroke-width="13" stroke-linecap="round" stroke-dasharray="0 226"
+              style="transition:stroke-dasharray .4s ease,stroke .4s ease"/>
+        <line id="gaugeNeedle" x1="80" y1="80" x2="80" y2="16"
+              stroke="rgba(255,255,255,0.9)" stroke-width="2" stroke-linecap="round"
+              style="transform-origin:80px 80px;transform:rotate(-90deg);transition:transform .4s ease"/>
+        <circle cx="80" cy="80" r="5" fill="white"/>
+      </svg>
+      <div class="score-big" id="scoreBig" style="color:#4dd98a">0%</div>
+      <div class="score-raw" id="scoreRaw">raw 0.0000%</div>
+    </div>
+
+```
+<div class="score-meta-col">
+  <div>
+    <div class="score-app-name">Combined Rating</div>
+    <div class="score-cfr">38 CFR §§ 4.25 – 4.26 &nbsp;·&nbsp; 88 FR 22917</div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat">
+      <div class="stat-val" id="statConds">0</div>
+      <div class="stat-lbl">Conditions</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="statBilat">0</div>
+      <div class="stat-lbl">In Bilat Group</div>
+    </div>
+    <div class="stat">
+      <div class="stat-val" id="statExcl">0</div>
+      <div class="stat-lbl">§4.26(d) Excl</div>
+    </div>
+  </div>
+
+  <div id="d426Badge" class="d426-header-badge d426-na" style="display:none"></div>
+</div>
+```
+
+  </div>
+
+  <!-- ══ CALCULATION BREAKDOWN ═════════════════════════════════════════════ -->
+
+  <div class="calc-card">
+    <div class="calc-title">Calculation Breakdown</div>
+    <div id="calcSteps">
+      <div class="calc-empty">Add conditions below to see the step-by-step calculation.</div>
+    </div>
+  </div>
+
+  <!-- ══ ADD RATING ════════════════════════════════════════════════════════ -->
+
+  <div class="card">
+    <div class="card-title">Add Disability Rating</div>
+
+```
+<div class="field-row">
+  <div class="field field-grow">
+    <label class="field-label" for="diagName">Diagnosis / Condition</label>
+    <input type="text" id="diagName" placeholder="e.g. Right Knee Strain" autocomplete="off">
+    <div class="err-txt" id="nameErr" style="display:none">Diagnosis name is required.</div>
+  </div>
+  <div class="field field-fixed">
+    <label class="field-label" for="diagPct">Evaluation %</label>
+    <select id="diagPct"></select>
+  </div>
+</div>
+
+<label class="check-row">
+  <input type="checkbox" id="isBilateral">
+  <span>
+    <strong>Bilateral condition</strong>
+    <span class="check-hint"> — paired extremity or skeletal muscle (§ 4.26)</span>
+  </span>
+</label>
+
+<div id="extremityWrap" style="display:none; margin-bottom:10px;">
+  <div class="field">
+    <label class="field-label" for="extremityType">Extremity Type <span class="check-hint">(informational)</span></label>
+    <select id="extremityType">
+      <option value="none">Non-Extremity / Other</option>
+      <option value="upper">Upper Extremity (Arm / Hand)</option>
+      <option value="lower">Lower Extremity (Leg / Foot)</option>
+      <option value="muscle">Paired Skeletal Muscles</option>
+      <option value="organ">Paired Organ</option>
+    </select>
+  </div>
+</div>
+
+<button class="btn btn-add" id="btnAdd">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+  Add to Evaluation
+</button>
+
+<div class="info-box" id="bilateralHint" style="display:none">
+  § 4.26(c): bilateral factor requires a compensable (≥ 10%) rating in <em>each</em> of the 2 paired extremities. Add the partner condition to activate.
+</div>
+```
+
+  </div>
+
+  <!-- ══ EVALUATION LIST ═══════════════════════════════════════════════════ -->
+
+  <div class="card" id="listCard" style="display:none">
+    <div class="card-title" id="listTitle">Evaluation List (0)</div>
+    <div id="entryList"></div>
+  </div>
+
+  <!-- ══ NEXUS NOTES ═══════════════════════════════════════════════════════ -->
+
+  <div class="card">
+    <div class="card-title">Nexus Strategy &amp; Advocacy Notes</div>
+    <textarea id="nexusNotes" rows="5"
+      placeholder="Document medical nexus, VASRD diagnostic codes met, DBQ findings, IMO/IME language, buddy statements, continuity of care..."></textarea>
+    <div class="action-row">
+      <button class="btn btn-copy" id="btnCopy">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Copy Claim Strategy
+      </button>
+      <button class="btn btn-reset" id="btnReset">Reset All</button>
+    </div>
+  </div>
+
+  <!-- ══ REGULATORY REFERENCE ══════════════════════════════════════════════ -->
+
+  <div class="card">
+    <div class="card-title">Regulatory Reference — 38 CFR § 4.26</div>
+    <div class="leg-row">
+      <span class="leg-cite">§ 4.25</span>
+      <span class="leg-text">Whole-person combination. Rounding is a two-step process: decimal → whole number (≥ 0.5 rounds up), then → nearest 10 (values ending in 5 round up). Single-step rounding is incorrect and can produce wrong results.</span>
+    </div>
+    <div class="leg-row">
+      <span class="leg-cite">§ 4.26</span>
+      <span class="leg-text">Combine bilateral conditions highest-to-lowest, then ADD (not combine) 10% of that combined value. Treat the result as one disability for further combination.</span>
+    </div>
+    <div class="leg-row">
+      <span class="leg-cite">§ 4.26(b)</span>
+      <span class="leg-text">Four-extremity rule: if both upper AND lower extremity bilateral pairs exist, combine all four in one group with one 10% bonus.</span>
+    </div>
+    <div class="leg-row">
+      <span class="leg-cite">§ 4.26(c)</span>
+      <span class="leg-text">Bilateral factor requires a compensable (≥ 10%) rating in each of the 2 paired extremities — not just one side.</span>
+    </div>
+    <div class="leg-row">
+      <span class="leg-cite">§ 4.26(d)</span>
+      <span class="leg-text">Exception (eff. Apr 16 2023, 88 FR 22917): VA must automatically exclude one or more bilateral conditions from the group when doing so yields a higher rating. This calculator tests all 2ⁿ subsets to find the optimal configuration.</span>
+    </div>
+  </div>
+
+  <div class="footer">
+    38 CFR §§ 4.25–4.26 as amended 88 FR 22917 (Apr 14, 2023)<br>
+    NOT a substitute for accredited VSO, claims agent, or attorney advice.
+  </div>
+</div>
+
+<!-- ══ SCRIPT ═════════════════════════════════════════════════════════════ -->
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   CALCULATION ENGINE  —  38 CFR §§ 4.25–4.26
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+function combineWholePerson(ratings) {
+  let remaining = 100, combined = 0;
+  for (const r of ratings) {
+    const c = remaining * (r / 100);
+    combined += c; remaining -= c;
+  }
+  return combined;
 }
- 
-function rnd10(v) {
-  return v % 10 >= 5 ? Math.ceil(v / 10) * 10 : Math.floor(v / 10) * 10;
+
+// § 4.25 two-step rounding — single-step Math.round(raw/10)*10 is WRONG
+// e.g. 74.5 → whole 75 → nearest 10 = 80, but single-step gives 70.
+function vaRound(raw) {
+  return Math.round(Math.round(raw) / 10) * 10;
 }
- 
-// ─── §4.26 / §4.26(d) Sub-Group Evaluator ────────────────────────────────────
-//
-// FIX #2 — correct §4.26(d) interpretation:
-//   38 CFR § 4.26(d): "The bilateral factor is not applicable when there is a
-//   100 percent evaluation based on 1 disability."
-//
-//   This is a GLOBAL rule: if any single disability in the entire claim carries
-//   a 100% rating, the bilateral factor is suppressed for ALL bilateral groups.
-//   It is NOT a per-group threshold check on rawCombined × 1.10 >= 100%.
-//
-//   Separately, as a mathematical reality, if a sub-group's rawCombined is so
-//   high that × 1.10 would reach or exceed 100%, we note the "overflow" and
-//   cap at 100 — but label this separately from the §4.26(d) regulation.
-//
-// Four mutually exclusive outcomes for a sub-group:
-//   A) oneSided     — missing left or right side → factor never applicable
-//   B) suppressed_global — §4.26(d): a 100% single disability exists globally
-//   C) suppressed_overflow — bilateral sub-group combined × 1.10 ≥ 100% (math cap)
-//   D) applyFactor  — all checks pass, factor applied
- 
-function evalSubGroup(subset, has100Global) {
-  const hasLeft   = subset.some(d => d.side === "left");
-  const hasRight  = subset.some(d => d.side === "right");
-  const bothSides = hasLeft && hasRight;
- 
-  const raw      = combineRaw(subset.map(d => d.rating));
-  const factored = raw * 1.1;
-  const overflow = factored >= 100;   // math cap, distinct from §4.26(d)
- 
-  const oneSided          = !bothSides;
-  const suppressed_global   = bothSides && has100Global;             // §4.26(d)
-  const suppressed_overflow = bothSides && !has100Global && overflow; // math cap
-  const applyFactor         = bothSides && !has100Global && !overflow;
- 
-  const eff     = applyFactor ? factored : suppressed_overflow ? 100 : raw;
-  const rounded = Math.round(eff);
- 
+
+function scoreScenario(inBilat, poolRest) {
+  const qualifying = inBilat.filter(e => e.rating >= 10);
+  const pool = poolRest.map(e => e.rating);
+  let bilateralApplied = false, groupRaw = 0, groupFinal = 0;
+
+  if (qualifying.length >= 2) {
+    bilateralApplied = true;
+    const sorted = [...qualifying].sort((a, b) => b.rating - a.rating);
+    groupRaw   = combineWholePerson(sorted.map(e => e.rating));
+    groupFinal = groupRaw * 1.10;          // ADD, not combine
+    pool.push(groupFinal);
+    inBilat.filter(e => e.rating < 10).forEach(e => pool.push(e.rating));
+  } else {
+    inBilat.forEach(e => pool.push(e.rating));
+  }
+
+  pool.sort((a, b) => b - a);
   return {
-    subset, bothSides, oneSided,
-    raw, factored, overflow,
-    applyFactor, suppressed_global, suppressed_overflow,
-    eff, rounded,
-    has100Global,
+    raw: combineWholePerson(pool),
+    bilateralApplied,
+    groupRaw,
+    groupFinal,
+    qualRatings: qualifying.map(e => e.rating).sort((a, b) => b - a),
   };
 }
- 
-// ─── Full Configuration Evaluator ────────────────────────────────────────────
- 
-function evalFullConfig(subResults, nonBil) {
-  const items = [
-    ...subResults.map(s => ({
-      label: s.subset.map(d => d.name).join(" + ") +
-        (s.applyFactor ? " (bilateral)" :
-         s.suppressed_global ? " (§4.26d—no factor)" :
-         s.suppressed_overflow ? " (overflow—capped)" : " (unpaired)"),
-      value: s.rounded,
-    })),
-    ...nonBil.map(d => ({ label: d.name || "Unnamed", value: d.rating })),
-  ].filter(x => x.value > 0).sort((a, b) => b.value - a.value);
- 
-  let rem = 100;
-  const steps = [];
-  for (const it of items) {
-    const taken = rem * it.value / 100;
-    steps.push({ ...it, taken: taken.toFixed(2), rem: (rem - taken).toFixed(2) });
-    rem -= taken;
-  }
-  const raw = 100 - rem;
-  return { items, steps, raw, final: rnd10(raw) };
-}
- 
-// ─── Set Partition & Cartesian Product Helpers ───────────────────────────────
- 
-function allPartitions(arr) {
-  if (!arr.length) return [[]];
-  const [h, ...t] = arr;
-  const subs = allPartitions(t);
-  const out = [];
-  for (const p of subs) {
-    out.push([[h], ...p]);
-    for (let i = 0; i < p.length; i++)
-      out.push(p.map((s, j) => j === i ? [h, ...s] : [...s]));
-  }
-  return out;
-}
- 
-function cartProd(arrs) {
-  return arrs.reduce((a, b) => a.flatMap(x => b.map(y => [...x, y])), [[]]);
-}
- 
-// ─── Optimization Engine ─────────────────────────────────────────────────────
-//
-// Enumerate every set-partition of each bilateral group, take the Cartesian
-// product across groups, evaluate each configuration, and select the one
-// yielding the highest final rounded combined rating.
-//
-// FIX #3 — when §4.26(d) applies globally (has100Global === true), all
-// configurations produce identical results (no bilateral factor anywhere),
-// so we short-circuit optimization and return a single unified config.
- 
-function findOptimal(disabilities) {
-  const nonBil = disabilities.filter(d => !d.bilateral);
- 
-  // FIX #2 — compute global §4.26(d) flag
-  const has100Global = disabilities.some(d => d.rating === 100);
- 
-  const byGroup = {};
-  for (const d of disabilities.filter(d => d.bilateral))
-    (byGroup[d.extremityGroup] = byGroup[d.extremityGroup] || []).push(d);
- 
-  const gids = Object.keys(byGroup);
- 
-  // No bilateral disabilities at all — pure combination
-  if (!gids.length) {
-    const overall = evalFullConfig([], nonBil);
-    return { optimal: { subResults: [], overall, combo: [] }, uniqueRows: [], nonBil, total: 1, gids, groupSets: [], has100Global, optimizationApplies: false };
-  }
- 
-  const groupSets = gids.map(gid => ({
-    gid,
-    label: GROUPS.find(g => g.id === gid)?.label || gid,
-    parts: allPartitions(byGroup[gid]).slice(0, 300),
-    dis: byGroup[gid],
-  }));
- 
-  // FIX #3 — short-circuit: §4.26(d) globally blocks factor, no split helps
-  if (has100Global) {
-    const unifiedSubs = groupSets.flatMap(g => [g.dis]).map(s => evalSubGroup(s, true));
-    const overall = evalFullConfig(unifiedSubs, nonBil);
-    const combo = groupSets.map(g => ({ gid: g.gid, label: g.label, p: [g.dis] }));
+
+function calculate(entries) {
+  if (!entries.length)
+    return { raw: 0, rounded: 0, bilateralApplied: false,
+             d426Applied: false, d426Tested: false,
+             inBilat: [], excluded: [], steps: [] };
+
+  const bilateral    = entries.filter(e => e.bilateral);
+  const nonBilateral = entries.filter(e => !e.bilateral);
+
+  if (!bilateral.length) {
+    const sorted = [...entries].sort((a, b) => b.rating - a.rating);
+    const raw = combineWholePerson(sorted.map(e => e.rating));
     return {
-      optimal: { subResults: unifiedSubs, overall, combo },
-      uniqueRows: [{ combo, subResults: unifiedSubs, overall }],
-      unifiedRow: { subResults: unifiedSubs, overall, combo },
-      nonBil, total: 1, gids, groupSets, has100Global,
-      optimizationApplies: false,
-      improved: false,
+      raw, rounded: vaRound(raw),
+      bilateralApplied: false, d426Applied: false, d426Tested: false,
+      inBilat: [], excluded: [],
+      steps: makeSteps({ bilateralApplied: false, d426Applied: false,
+        d426Tested: false, noBilateral: true, raw,
+        nonBilateral: entries, excluded: [], result: null,
+        fullGroupRounded: null, subsets: 0 }),
     };
   }
- 
-  // Full optimization — iterate all configurations
-  const combos = cartProd(groupSets.map(g => g.parts.map(p => ({ gid: g.gid, label: g.label, p }))));
- 
-  let bestFinal = -1, bestRaw = -1, optimal = null;
-  const seen = new Map();
- 
-  for (const combo of combos) {
-    const subResults = combo.flatMap(c => c.p).map(s => evalSubGroup(s, has100Global));
-    const overall    = evalFullConfig(subResults, nonBil);
-    const key        = `${overall.final}::${overall.raw.toFixed(5)}`;
-    const row        = { combo, subResults, overall };
-    if (!seen.has(key)) seen.set(key, row);
-    if (overall.final > bestFinal || (overall.final === bestFinal && overall.raw > bestRaw)) {
-      bestFinal = overall.final; bestRaw = overall.raw; optimal = row;
+
+  // § 4.26(d): enumerate 2^n subsets; optimise over ROUNDED rating
+  const n = bilateral.length;
+  let bestRaw = -1, bestRounded = -1, bestMask = (1 << n) - 1;
+
+  for (let mask = 0; mask < (1 << n); mask++) {
+    const inB  = bilateral.filter((_, i) => (mask >> i) & 1);
+    const outB = bilateral.filter((_, i) => !((mask >> i) & 1));
+    const { raw } = scoreScenario(inB, [...nonBilateral, ...outB]);
+    const rounded  = vaRound(raw);
+    if (rounded > bestRounded || (rounded === bestRounded && raw > bestRaw)) {
+      bestRaw = raw; bestRounded = rounded; bestMask = mask;
     }
   }
- 
-  const uniqueRows = [...seen.values()]
-    .sort((a, b) => b.overall.final - a.overall.final || b.overall.raw - a.overall.raw)
-    .slice(0, 10);
- 
-  // Unified baseline: all disabilities in each group together as one sub-group
-  const unifiedCombo = groupSets.map(g => ({ gid: g.gid, label: g.label, p: [g.dis] }));
-  const unifiedSubs  = unifiedCombo.flatMap(c => c.p).map(s => evalSubGroup(s, has100Global));
-  const unifiedRow   = { combo: unifiedCombo, subResults: unifiedSubs, overall: evalFullConfig(unifiedSubs, nonBil) };
- 
-  const improved = optimal && (
-    optimal.overall.final > unifiedRow.overall.final ||
-    (optimal.overall.final === unifiedRow.overall.final && optimal.overall.raw > unifiedRow.overall.raw + 0.001)
-  );
- 
+
+  const inBilat  = bilateral.filter((_, i) =>  (bestMask >> i) & 1);
+  const excluded = bilateral.filter((_, i) => !((bestMask >> i) & 1));
+  const best     = scoreScenario(inBilat, [...nonBilateral, ...excluded]);
+  const fullGrp  = scoreScenario(bilateral, nonBilateral);
+  const fullGroupRounded = vaRound(fullGrp.raw);
+  const d426Applied = excluded.length > 0 && vaRound(best.raw) > fullGroupRounded;
+
   return {
-    optimal, uniqueRows, unifiedRow, groupSets, nonBil,
-    total: combos.length, gids, has100Global,
-    optimizationApplies: true, improved,
+    raw: best.raw, rounded: vaRound(best.raw),
+    bilateralApplied: best.bilateralApplied,
+    d426Applied, d426Tested: true,
+    inBilat, excluded,
+    steps: makeSteps({
+      bilateralApplied: best.bilateralApplied, d426Applied,
+      d426Tested: true, noBilateral: false,
+      raw: best.raw, nonBilateral, excluded, result: best,
+      fullGroupRounded, subsets: 1 << n,
+    }),
   };
 }
- 
-// ─── Component ────────────────────────────────────────────────────────────────
- 
-function VACalculator() {
-  // FIX #1 — share the same array for initial live and committed state
-  // so isDirty === false on mount
-  const [live, setLive]        = useState(INITIAL);
-  const [committed, setCommit] = useState(INITIAL);
- 
-  const isDirty = JSON.stringify(live) !== JSON.stringify(committed);
- 
-  const add    = () => setLive(p => [...p, { id: uid(), name: `Disability ${p.length + 1}`, rating: 10, bilateral: false, extremityGroup: "upper", side: "left" }]);
-  const remove = (id) => setLive(p => p.filter(d => d.id !== id));
-  const upd    = (id, f, v) => setLive(p => p.map(d => d.id === id ? { ...d, [f]: v } : d));
-  const clear  = () => {
-    const f = [{ id: uid(), name: "Disability 1", rating: 10, bilateral: false, extremityGroup: "upper", side: "left" }];
-    setLive(f); setCommit(f);
-  };
-  const recalc = () => setCommit(live);
- 
-  const data = useMemo(() => {
-    const active = committed.filter(d => d.rating > 0);
-    if (!active.length) return null;
-    return findOptimal(active);
-  }, [committed]);
- 
-  const hasBilateral = !!data?.gids?.length;
-  const opt          = data?.optimal;
-  const stepBase     = hasBilateral ? 1 : 0;
- 
-  return (
-    <div style={{ fontFamily: "'DM Mono','Courier New',monospace", minHeight: "100vh", background: "#0d1117", color: "#e6edf3" }}>
-      <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Bebas+Neue&display=swap');
-        *{box-sizing:border-box;margin:0;padding:0}
-        .pg{max-width:880px;margin:0 auto;padding:28px 20px 60px}
-        .banner{display:flex;align-items:center;gap:16px;margin-bottom:30px;border-bottom:1px solid #2a6f3b;padding-bottom:18px}
-        .shield{width:46px;height:46px;background:#2a6f3b;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
-        .btitle{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:#5bcc7a;line-height:1}
-        .bsub{font-size:10px;color:#7d8590;letter-spacing:1px;text-transform:uppercase;margin-top:3px}
-        .slbl{font-size:9px;letter-spacing:3px;text-transform:uppercase;color:#5bcc7a;border-left:3px solid #2a6f3b;padding-left:9px;margin-bottom:12px}
-        .card{background:#161b22;border:1px solid #21262d;border-radius:6px;padding:16px;margin-bottom:12px}
-        .drow{display:grid;grid-template-columns:1fr 80px auto auto;gap:7px;align-items:center}
-        .inp{background:#0d1117;border:1px solid #30363d;border-radius:4px;color:#e6edf3;padding:6px 9px;font-family:inherit;font-size:13px;width:100%;outline:none;transition:border-color .15s}
-        .inp:focus{border-color:#2a6f3b}
-        select.inp{cursor:pointer}
-        .bpanel{background:#0d1f14;border:1px solid #1e4a2a;border-radius:4px;padding:9px 11px;margin-top:7px;display:grid;grid-template-columns:1fr 1fr;gap:8px}
-        .tglw{display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none}
-        .tbox{width:30px;height:16px;border-radius:8px;border:1px solid #30363d;background:#21262d;position:relative;transition:all .2s;flex-shrink:0}
-        .tbox.on{background:#2a6f3b;border-color:#2a6f3b}
-        .knob{position:absolute;top:2px;left:2px;width:10px;height:10px;border-radius:50%;background:#6e7681;transition:all .2s}
-        .tbox.on .knob{left:16px;background:#fff}
-        .btnrm{background:transparent;border:none;color:#6e7681;cursor:pointer;font-size:15px;padding:3px 5px;border-radius:3px;transition:color .15s}
-        .btnrm:hover{color:#f85149}
-        .btns{display:flex;gap:7px;margin-top:10px}
-        .btn{background:transparent;border:1px dashed #2a6f3b;border-radius:4px;color:#5bcc7a;padding:7px 16px;font-family:inherit;font-size:11px;cursor:pointer;flex:1;letter-spacing:1px;transition:background .15s}
-        .btn:hover{background:#0d1f14}
-        .btn.clr{border-color:#f85149;color:#f85149}
-        .btn.clr:hover{background:#2d1a1a}
-        .btn.recalc{background:#2a6f3b;border-style:solid;color:#fff;letter-spacing:2px;font-weight:500;animation:glow 1.4s ease-in-out infinite;margin-top:10px;width:100%}
-        .btn.recalc:hover{background:#3a8f50;animation:none;box-shadow:0 0 16px #2a6f3b88}
-        @keyframes glow{0%,100%{box-shadow:0 0 0 0 #2a6f3b55}50%{box-shadow:0 0 0 5px #2a6f3b00}}
-        .results{background:#0d1117;border:1px solid #2a6f3b;border-radius:8px;padding:20px;margin-top:26px;position:relative}
-        .stale{position:absolute;top:11px;right:13px;font-size:10px;color:#f85149;letter-spacing:1px;text-transform:uppercase}
-        .hero{font-family:'Bebas Neue',sans-serif;font-size:68px;color:#5bcc7a;line-height:1;letter-spacing:2px}
-        .herosub{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#7d8590;margin-top:3px}
-        .rawline{margin-top:7px;font-size:12px;color:#8b949e}
-        .divider{border:none;border-top:1px solid #21262d;margin:18px 0}
-        .sblock{background:#161b22;border:1px solid #21262d;border-radius:6px;padding:13px 15px;margin-bottom:10px}
-        .sblock.green{border-color:#2a6f3b}
-        .sblock.red{border-color:#5a2020}
-        .sblock.blue{border-color:#2a3a4a}
-        .sblock.gold{border-color:#6b5a1a;background:#131009}
-        .stitle{font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#7d8590;margin-bottom:9px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:4px}
-        .srow{display:flex;justify-content:space-between;align-items:flex-start;font-size:12px;padding:4px 0;border-bottom:1px solid #1c2128}
-        .srow:last-child{border-bottom:none}
-        .sl{color:#8b949e;max-width:65%;line-height:1.4}
-        .sv{color:#e6edf3;text-align:right}
-        .sv.g{color:#5bcc7a;font-weight:500}
-        .sv.dim{color:#484f58;text-decoration:line-through}
-        .vblock{background:#0d1117;border:1px solid #2a3a2a;border-radius:4px;padding:9px 11px;margin:8px 0}
-        .vtitle{font-size:9px;letter-spacing:2px;text-transform:uppercase;color:#5bcc7a;margin-bottom:7px}
-        .vrow{display:flex;justify-content:space-between;align-items:center;font-size:11px;padding:3px 0;border-bottom:1px solid #1c2128;gap:8px}
-        .vrow:last-child{border-bottom:none}
-        .vl{color:#8b949e;flex:1;min-width:0}
-        .vv{font-size:11px;text-align:right;flex-shrink:0;max-width:55%}
-        .vv.pass{color:#5bcc7a;font-weight:500}
-        .vv.fail{color:#f85149;font-weight:500}
-        .vv.info{color:#e6edf3}
-        .vv.skip{color:#484f58;font-style:italic}
-        .tag{display:inline-flex;align-items:center;background:#1a3a2a;border:1px solid #2a6f3b;border-radius:3px;font-size:9px;padding:1px 6px;color:#5bcc7a;margin-left:5px;white-space:nowrap}
-        .tag.r{background:#2d1a1a;border-color:#f85149;color:#f85149}
-        .tag.b{background:#1a1f2e;border-color:#79a8e8;color:#79a8e8}
-        .tag.y{background:#1a1800;border-color:#b8a020;color:#e8d040}
-        .tag.o{background:#1f1600;border-color:#c07820;color:#e09040}
-        .callout{background:#1a2c1e;border-left:3px solid #5bcc7a;border-radius:0 4px 4px 0;padding:9px 13px;font-size:11px;color:#8b949e;margin-bottom:10px;line-height:1.7}
-        .callout strong{color:#5bcc7a}
-        .warn{background:#2d1a1a;border-left:3px solid #f85149;border-radius:0 4px 4px 0;padding:9px 13px;font-size:11px;color:#f0a0a0;margin-bottom:10px;line-height:1.7}
-        .warn strong{color:#f85149}
-        .notice{background:#1a1f2e;border-left:3px solid #79a8e8;border-radius:0 4px 4px 0;padding:9px 13px;font-size:11px;color:#a0b8e0;margin-bottom:10px;line-height:1.7}
-        .notice strong{color:#79a8e8}
-        .improve{background:#131009;border-left:3px solid #e8d040;border-radius:0 4px 4px 0;padding:9px 13px;font-size:11px;color:#d0c060;margin-bottom:10px;line-height:1.7}
-        .improve strong{color:#e8d040}
-        .overflow-note{background:#1f1600;border-left:3px solid #c07820;border-radius:0 4px 4px 0;padding:9px 13px;font-size:11px;color:#d09050;margin-bottom:10px;line-height:1.7}
-        .overflow-note strong{color:#e09040}
-        .ctable{width:100%;border-collapse:collapse;font-size:11px;margin-top:6px}
-        .ctable th{font-size:9px;letter-spacing:1px;text-transform:uppercase;color:#7d8590;padding:5px 8px;border-bottom:1px solid #30363d;text-align:left}
-        .ctable td{padding:6px 8px;border-bottom:1px solid #1c2128;vertical-align:top;color:#8b949e;line-height:1.5}
-        .ctable tr.opt td{background:#0d1f14;color:#e6edf3}
-        .ctable tr.uni td{background:#13131a}
-        .ctable td.rating{font-family:'Bebas Neue',sans-serif;font-size:18px;color:#8b949e;white-space:nowrap}
-        .ctable tr.opt td.rating{color:#5bcc7a}
-        .note{font-size:10px;color:#484f58;margin-top:20px;line-height:1.8}
-        @media(max-width:600px){.drow{grid-template-columns:1fr 70px auto auto}.bpanel{grid-template-columns:1fr}.hero{font-size:52px}}
-      `}</style>
- 
-      <div className="pg">
- 
-        {/* ── Banner ── */}
-        <div className="banner">
-          <div className="shield">🎖️</div>
-          <div>
-            <div className="btitle">VA Combined Rating Calculator</div>
-            <div className="bsub">38 CFR §§ 4.25 · 4.26 · §4.26(d) · Optimal Bilateral Configuration</div>
-          </div>
+
+function makeSteps({ bilateralApplied, d426Applied, d426Tested, noBilateral,
+                     raw, nonBilateral, excluded, result,
+                     fullGroupRounded, subsets }) {
+  const steps = [];
+
+  // § 4.26 bilateral group
+  if (bilateralApplied && result) {
+    steps.push({
+      barCls: 'bar-blue', labelCls: 'lbl-blue',
+      label: '§ 4.26  —  Bilateral Group',
+      badge: null, rowCls: '',
+      detail: result.qualRatings.map(r => r + '%').join(' + ')
+        + '  →  combined ' + result.groupRaw.toFixed(4) + '%'
+        + '  →  ADD 10% bonus (not combined)  =  ' + result.groupFinal.toFixed(4) + '%',
+    });
+  }
+
+  // § 4.26(d) — always present
+  if (!d426Tested || noBilateral) {
+    steps.push({
+      barCls: 'bar-slate', labelCls: 'lbl-slate',
+      label: '§ 4.26(d)  —  Exception',
+      badge: { cls: 'badge-na', text: 'N/A' }, rowCls: '',
+      detail: 'No bilateral conditions entered. § 4.26 does not apply.',
+    });
+  } else if (d426Applied) {
+    steps.push({
+      barCls: 'bar-amber', labelCls: 'lbl-amber',
+      label: '§ 4.26(d)  —  Exception',
+      badge: { cls: 'badge-applied', text: 'APPLIED' }, rowCls: 'step-d426-applied',
+      detail: subsets + ' configurations tested. '
+        + 'Excluded from bilateral group: '
+        + excluded.map(e => e.name + ' (' + e.rating + '%)').join(', ') + '. '
+        + 'Standard bilateral group → ' + fullGroupRounded + '% rated. '
+        + 'After exclusion → ' + vaRound(raw) + '% rated. '
+        + 'Net gain: +' + (vaRound(raw) - fullGroupRounded) + '%.',
+    });
+  } else if (bilateralApplied) {
+    steps.push({
+      barCls: 'bar-green', labelCls: 'lbl-green',
+      label: '§ 4.26(d)  —  Exception',
+      badge: { cls: 'badge-ok', text: 'NOT REQUIRED' }, rowCls: 'step-d426-ok',
+      detail: subsets + ' configurations tested. '
+        + 'Standard bilateral group already yields the highest outcome ('
+        + fullGroupRounded + '%). No exclusion is beneficial.',
+    });
+  } else {
+    steps.push({
+      barCls: 'bar-slate', labelCls: 'lbl-slate',
+      label: '§ 4.26(d)  —  Exception',
+      badge: { cls: 'badge-warn', text: '§ 4.26(c) NOT MET' }, rowCls: '',
+      detail: 'Bilateral factor requires ≥ 2 compensable (≥ 10%) conditions. '
+        + 'Fewer than 2 qualifying bilateral entries — bilateral factor cannot apply.',
+    });
+  }
+
+  // § 4.25 final combination
+  const parts = [];
+  if (bilateralApplied && result)
+    parts.push(result.groupFinal.toFixed(2) + '%  (bilateral group)');
+  [...nonBilateral, ...excluded].sort((a, b) => b.rating - a.rating)
+    .forEach(e => parts.push(e.rating + '%  (' + e.name + ')'));
+
+  steps.push({
+    barCls: 'bar-blue', labelCls: 'lbl-blue',
+    label: '§ 4.25  —  Whole-Person Combination  (highest → lowest)',
+    badge: null, rowCls: '',
+    detail: parts.join('  →  ') + '  =  ' + raw.toFixed(4) + '%',
+  });
+
+  steps.push({
+    barCls: 'bar-green', labelCls: 'lbl-green',
+    label: '§ 4.25  —  Rounding  (two-step)',
+    badge: null, rowCls: '',
+    detail: raw.toFixed(4) + '%  →  whole: ' + Math.round(raw)
+      + '%  →  nearest 10: ' + vaRound(raw) + '%  =  Final Rating',
+  });
+
+  return steps;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STATE & RENDER
+   ═══════════════════════════════════════════════════════════════════════════ */
+let entries = [];
+let editId  = null;
+
+const EXT_LABELS = {
+  none:'', upper:'Upper Extremity', lower:'Lower Extremity',
+  muscle:'Paired Skeletal Muscles', organ:'Paired Organ',
+};
+
+// Populate % dropdown
+const diagPctEl = document.getElementById('diagPct');
+for (let v = 100; v >= 0; v -= 10) {
+  const o = document.createElement('option');
+  o.value = v; o.textContent = v + '%';
+  if (v === 30) o.selected = true;
+  diagPctEl.appendChild(o);
+}
+
+document.getElementById('isBilateral').addEventListener('change', function () {
+  document.getElementById('extremityWrap').style.display = this.checked ? 'block' : 'none';
+});
+
+document.getElementById('btnAdd').addEventListener('click', addEntry);
+document.getElementById('diagName').addEventListener('keydown', e => { if (e.key === 'Enter') addEntry(); });
+
+function addEntry() {
+  const nameEl = document.getElementById('diagName');
+  const name   = nameEl.value.trim();
+  if (!name) {
+    nameEl.classList.add('err');
+    document.getElementById('nameErr').style.display = 'block';
+    return;
+  }
+  nameEl.classList.remove('err');
+  document.getElementById('nameErr').style.display = 'none';
+  entries.push({
+    id: Date.now(), name,
+    rating:    parseInt(document.getElementById('diagPct').value),
+    bilateral: document.getElementById('isBilateral').checked,
+    extremity: document.getElementById('extremityType').value,
+  });
+  nameEl.value = '';
+  document.getElementById('isBilateral').checked = false;
+  document.getElementById('extremityWrap').style.display = 'none';
+  document.getElementById('extremityType').value = 'none';
+  render();
+}
+
+document.getElementById('btnCopy').addEventListener('click', function () {
+  const res  = calculate(entries);
+  const list = entries.map(e => {
+    const excl = res.excluded.some(x => x.id === e.id);
+    const tag  = e.bilateral ? (excl ? '  [BILAT — §4.26(d) EXCL]' : '  [BILATERAL]') : '';
+    return '  ' + String(e.rating).padStart(3) + '%  ' + e.name + tag;
+  }).join('\n');
+
+  const text = [
+    'VA COMBINED RATING EVALUATION',
+    '='.repeat(50),
+    'Final Combined Rating   : ' + res.rounded + '%',
+    'Unrounded Raw           : ' + res.raw.toFixed(4) + '%',
+    'Bilateral Factor (§4.26): ' + (res.bilateralApplied ? 'Applied' : 'Not applicable'),
+    '§ 4.26(d) Exception     : ' + (res.d426Applied ? 'APPLIED' : res.d426Tested ? 'Not required' : 'N/A'),
+    '',
+    'RATED CONDITIONS:',
+    list || '  (none)',
+    '',
+    'CALCULATION STEPS:',
+    ...res.steps.map(s => '  [' + s.label + (s.badge ? ' — ' + s.badge.text : '') + ']\n  ' + s.detail),
+    '',
+    'NEXUS STRATEGY & NOTES:',
+    document.getElementById('nexusNotes').value || '  (none)',
+    '',
+    'Calculated per 38 CFR §§ 4.25–4.26 (as amended 88 FR 22917, Apr 14 2023)',
+    'NOT a substitute for accredited VSO or attorney advice.',
+  ].join('\n');
+
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = document.getElementById('btnCopy');
+    btn.classList.add('done');
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+    setTimeout(() => {
+      btn.classList.remove('done');
+      btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Claim Strategy';
+    }, 2500);
+  });
+});
+
+document.getElementById('btnReset').addEventListener('click', () => {
+  if (!entries.length && !document.getElementById('nexusNotes').value) return;
+  if (confirm('Clear all entries and notes?')) {
+    entries = []; editId = null;
+    document.getElementById('nexusNotes').value = '';
+    render();
+  }
+});
+
+/* ─── RENDER ─────────────────────────────────────────────────────────────── */
+function render() {
+  const res = calculate(entries);
+  renderGauge(res);
+  renderStats(res);
+  renderD426Badge(res);
+  renderSteps(res);
+  renderList(res);
+  renderBilateralHint();
+}
+
+function pctColor(r) {
+  if (r >= 70) return '#e84040';
+  if (r >= 50) return '#d4780a';
+  if (r >= 30) return '#b8960a';
+  return '#0f8a47';
+}
+
+function renderGauge(res) {
+  const col     = pctColor(res.rounded);
+  const arcLen  = ((res.raw / 100) * 226).toFixed(2);
+  const angleDeg = (res.raw / 100) * 180 - 90;
+
+  document.getElementById('gaugeFill').setAttribute('stroke', col);
+  document.getElementById('gaugeFill').setAttribute('stroke-dasharray', arcLen + ' 226');
+  document.getElementById('gaugeNeedle').style.transform = 'rotate(' + angleDeg + 'deg)';
+  document.getElementById('scoreBig').textContent = res.rounded + '%';
+  document.getElementById('scoreBig').style.color  = col;
+  document.getElementById('scoreRaw').textContent  = 'raw ' + res.raw.toFixed(4) + '%';
+}
+
+function renderStats(res) {
+  document.getElementById('statConds').textContent = entries.length;
+  document.getElementById('statBilat').textContent = res.inBilat.length;
+  const el = document.getElementById('statExcl');
+  el.textContent = res.excluded.length;
+  el.style.color = res.d426Applied && res.excluded.length ? '#f5c96a' : '';
+}
+
+function renderD426Badge(res) {
+  const el = document.getElementById('d426Badge');
+  if (!res.d426Tested) { el.style.display = 'none'; return; }
+  el.style.display = 'block';
+  el.className = 'd426-header-badge ' + (res.d426Applied ? 'd426-applied' : 'd426-ok');
+  el.innerHTML = res.d426Applied
+    ? '<strong>§ 4.26(d) APPLIED</strong> — ' + esc(res.excluded.map(e => e.name).join(', ')) + ' excluded from bilateral group'
+    : '<strong>§ 4.26(d) NOT REQUIRED</strong> — standard bilateral group is already optimal';
+}
+
+function renderSteps(res) {
+  const el = document.getElementById('calcSteps');
+  if (!res.steps.length) {
+    el.innerHTML = '<div class="calc-empty">Add conditions below to see the step-by-step calculation.</div>';
+    return;
+  }
+  el.innerHTML = res.steps.map(s => {
+    const badge = s.badge
+      ? '<span class="badge ' + s.badge.cls + '">' + s.badge.text + '</span>'
+      : '';
+    return `<div class="step ${s.rowCls}">
+      <div class="step-bar ${s.barCls}"></div>
+      <div class="step-body">
+        <div class="step-head">
+          <span class="step-label ${s.labelCls}">${s.label}</span>
+          ${badge}
         </div>
- 
-        {/* ── Input ── */}
-        <div className="slbl">Service-Connected Disabilities</div>
-        <div className="card">
-          {live.map((d, idx) => (
-            <div key={d.id} style={{ marginBottom: idx < live.length - 1 ? 16 : 0 }}>
-              <div className="drow">
-                <input className="inp" value={d.name} placeholder={`Disability ${idx + 1}`}
-                  onChange={e => upd(d.id, "name", e.target.value)} />
-                <select className="inp" value={d.rating}
-                  onChange={e => upd(d.id, "rating", +e.target.value)}>
-                  {RATING_OPTIONS.map(r => <option key={r} value={r}>{r}%</option>)}
-                </select>
-                <label className="tglw" title="Bilateral paired extremity">
-                  <div className={`tbox ${d.bilateral ? "on" : ""}`}><div className="knob" /></div>
-                  <span style={{ fontSize: 10, color: "#8b949e", letterSpacing: 1 }}>BIL</span>
-                  <input type="checkbox" style={{ display: "none" }} checked={d.bilateral}
-                    onChange={e => upd(d.id, "bilateral", e.target.checked)} />
-                </label>
-                <button className="btnrm" onClick={() => remove(d.id)}>✕</button>
-              </div>
-              {d.bilateral && (
-                <div className="bpanel">
-                  <div>
-                    <div style={{ fontSize: 9, letterSpacing: 1, color: "#5bcc7a", marginBottom: 4, textTransform: "uppercase" }}>Extremity Group</div>
-                    <select className="inp" value={d.extremityGroup}
-                      onChange={e => upd(d.id, "extremityGroup", e.target.value)}>
-                      {GROUPS.map(g => <option key={g.id} value={g.id}>{g.label}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <div style={{ fontSize: 9, letterSpacing: 1, color: "#5bcc7a", marginBottom: 4, textTransform: "uppercase" }}>Side</div>
-                    <select className="inp" value={d.side}
-                      onChange={e => upd(d.id, "side", e.target.value)}>
-                      <option value="left">Left</option>
-                      <option value="right">Right</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-          <div className="btns">
-            <button className="btn" onClick={add}>+ ADD DISABILITY</button>
-            <button className="btn clr" onClick={clear}>CLEAR</button>
-          </div>
-          {isDirty && (
-            <button className="btn recalc" onClick={recalc}>⟳ RECALCULATE</button>
-          )}
-        </div>
- 
-        <div className="callout">
-          <strong>Optimization:</strong> When bilateral disabilities are present and §4.26(d) does not apply, the calculator tests every valid sub-grouping and selects the one yielding the highest combined rating per 38 CFR § 4.26.
-        </div>
- 
-        {/* ── Empty state ── */}
-        {!data && (
-          <div style={{ textAlign: "center", color: "#8b949e", padding: "40px 0", fontSize: 13, letterSpacing: 1 }}>
-            Add at least one disability with a rating above 0% to calculate.
-          </div>
-        )}
- 
-        {/* ── Results ── */}
-        {data && opt && (
-          <div className="results" style={{ opacity: isDirty ? 0.45 : 1, transition: "opacity .3s" }}>
-            {isDirty && <div className="stale">● Stale — recalculate</div>}
- 
-            {/* Hero */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 14 }}>
-              <div>
-                <div className="hero">{opt.overall.final}%</div>
-                <div className="herosub">
-                  {data.has100Global ? "Combined Rating (§4.26(d) Applied)" : "Optimal Combined Rating"}
-                </div>
-                <div className="rawline">
-                  Raw: <span style={{ color: "#e6edf3" }}>{opt.overall.raw.toFixed(2)}%</span> → rounded to nearest 10%
-                </div>
-              </div>
-              {hasBilateral && data.optimizationApplies && (
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: 10, letterSpacing: 1, color: "#7d8590", textTransform: "uppercase", marginBottom: 4 }}>Configs Tested</div>
-                  <div style={{ fontFamily: "'Bebas Neue',sans-serif", fontSize: 40, color: "#5bcc7a", lineHeight: 1 }}>{data.total}</div>
-                  <div style={{ fontSize: 10, color: "#7d8590" }}>{data.uniqueRows.length} unique outcomes</div>
-                </div>
-              )}
-            </div>
- 
-            <hr className="divider" />
- 
-            {/* ── §4.26(d) Global Notice ── */}
-            {data.has100Global && hasBilateral && (
-              <div className="warn">
-                <strong>§ 4.26(d) — Global Suppression Active:</strong> One or more disabilities carry a 100% rating.
-                Per 38 CFR § 4.26(d), the bilateral factor is not applicable when there is a 100% evaluation based on
-                a single disability. The bilateral factor is therefore suppressed for all extremity groups in this claim.
-                Optimization is not performed — all configurations yield identical results.
-              </div>
-            )}
- 
-            {/* ── Optimization analysis ── */}
-            {hasBilateral && data.optimizationApplies && (
-              <>
-                <div className="slbl" style={{ marginBottom: 12 }}>§ 4.26 Optimization Analysis</div>
- 
-                {data.improved ? (
-                  <div className="improve">
-                    <strong>⬆ Optimization improved the rating:</strong> The unified grouping yields{" "}
-                    <strong>{data.unifiedRow.overall.final}%</strong> (raw {data.unifiedRow.overall.raw.toFixed(2)}%).
-                    Splitting bilateral disabilities into separate sub-groups avoids §4.26(d) overflow suppression and
-                    raises the combined rating to <strong>{opt.overall.final}%</strong> (raw {opt.overall.raw.toFixed(2)}%).
-                  </div>
-                ) : (
-                  <div className="callout" style={{ marginBottom: 10 }}>
-                    <strong>✓ Unified grouping is already optimal:</strong> All {data.total} configuration{data.total !== 1 ? "s were" : " was"} evaluated.
-                    No alternative sub-grouping produces a higher result than the unified{" "}
-                    <strong>{opt.overall.final}%</strong>.
-                  </div>
-                )}
- 
-                {/* Comparison table */}
-                <div className="sblock gold">
-                  <div className="stitle">
-                    <span>Configuration Comparison — All Unique Outcomes</span>
-                    <span className="tag y">Sorted Highest → Lowest</span>
-                  </div>
-                  <table className="ctable">
-                    <thead>
-                      <tr>
-                        <th>#</th>
-                        <th>Grouping</th>
-                        <th>Factor Result</th>
-                        <th>Final</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {data.uniqueRows.map((row, i) => {
-                        const isOpt = row.overall.final === opt.overall.final &&
-                          Math.abs(row.overall.raw - opt.overall.raw) < 0.001;
-                        const isUni = !isOpt && data.unifiedRow &&
-                          row.overall.final === data.unifiedRow.overall.final &&
-                          Math.abs(row.overall.raw - data.unifiedRow.overall.raw) < 0.001;
-                        return (
-                          <tr key={i} className={isOpt ? "opt" : isUni ? "uni" : ""}>
-                            <td style={{ color: isOpt ? "#5bcc7a" : "#484f58", fontWeight: isOpt ? 600 : 400 }}>
-                              {isOpt ? "★" : i + 1}
-                            </td>
-                            <td>
-                              {row.combo.map((c, ci) => (
-                                <div key={ci} style={{ marginBottom: ci < row.combo.length - 1 ? 4 : 0 }}>
-                                  <span style={{ color: "#5bcc7a", fontSize: 9, letterSpacing: 1 }}>{c.label}: </span>
-                                  {c.p.map((subset, si) => {
-                                    const s = evalSubGroup(subset, data.has100Global);
-                                    return (
-                                      <span key={si}>
-                                        {si > 0 && <span style={{ color: "#484f58" }}> / </span>}
-                                        <span style={{ color: s.applyFactor ? "#e6edf3" : "#6e7681" }}>
-                                          {subset.map(d => d.name).join("+")}
-                                        </span>
-                                        {s.applyFactor         && <span style={{ color: "#5bcc7a" }}>[×1.10]</span>}
-                                        {s.suppressed_global   && <span style={{ color: "#f85149" }}>[§4.26d]</span>}
-                                        {s.suppressed_overflow && <span style={{ color: "#e09040" }}>[overflow]</span>}
-                                        {s.oneSided            && <span style={{ color: "#79a8e8" }}>[unpaired]</span>}
-                                      </span>
-                                    );
-                                  })}
-                                </div>
-                              ))}
-                            </td>
-                            <td>
-                              {row.subResults.map((s, si) => (
-                                <div key={si} style={{ color: s.applyFactor ? "#5bcc7a" : "#6e7681", marginBottom: 2 }}>
-                                  {s.applyFactor
-                                    ? `${s.raw.toFixed(1)}% × 1.10 = ${s.rounded}%`
-                                    : s.suppressed_global
-                                    ? `${s.raw.toFixed(1)}% — §4.26(d) global`
-                                    : s.suppressed_overflow
-                                    ? `${s.raw.toFixed(1)}% × 1.10 = ${s.factored.toFixed(1)}% → capped 100%`
-                                    : `${s.raw.toFixed(1)}% (no factor)`}
-                                </div>
-                              ))}
-                            </td>
-                            <td className="rating">{row.overall.final}%</td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-                <hr className="divider" />
-              </>
-            )}
- 
-            {/* ── Step 1: Bilateral sub-groups with full §4.26(d) validation ── */}
-            {hasBilateral && opt.subResults.length > 0 && (
-              <>
-                <div className="slbl" style={{ marginBottom: 12 }}>
-                  Step 1 — Bilateral Sub-Groups & §4.26(d) Validation
-                </div>
- 
-                {data.groupSets.map(gs => {
-                  const groupSubs = opt.subResults.filter(s =>
-                    s.subset.some(d => d.extremityGroup === gs.gid));
-                  return (
-                    <div key={gs.gid}>
-                    {groupSubs.map((s, si) => {
-                    const borderColor = s.applyFactor ? "#2a6f3b"
-                      : s.suppressed_global ? "#5a2020"
-                      : s.suppressed_overflow ? "#3a2800"
-                      : "#2a3a4a";
- 
-                    return (
-                      <div key={`${gs.gid}-${si}`}>
-                        {/* Per-case notice banners */}
-                        {s.suppressed_global && (
-                          <div className="warn">
-                            <strong>§ 4.26(d) — {gs.label}{groupSubs.length > 1 ? ` Sub-Group ${si + 1}` : ""}:</strong>{" "}
-                            A single disability rated 100% exists in this claim. Per 38 CFR § 4.26(d), the bilateral
-                            factor is not applicable. Sub-group combined normally without factor.
-                          </div>
-                        )}
-                        {s.suppressed_overflow && (
-                          <div className="overflow-note">
-                            <strong>Math Cap — {gs.label}{groupSubs.length > 1 ? ` Sub-Group ${si + 1}` : ""}:</strong>{" "}
-                            rawCombined ({s.raw.toFixed(2)}%) × 1.10 = {s.factored.toFixed(2)}% would exceed 100%.
-                            Result capped at 100% — distinct from §4.26(d), which requires a single 100% disability.
-                          </div>
-                        )}
-                        {s.oneSided && (
-                          <div className="notice">
-                            <strong>Unpaired — {gs.label}{groupSubs.length > 1 ? ` Sub-Group ${si + 1}` : ""}:</strong>{" "}
-                            Only {[...new Set(s.subset.map(d => d.side))].join(" & ")} side present — bilateral factor
-                            requires both left and right disabilities in the same group.
-                          </div>
-                        )}
- 
-                        <div className="sblock" style={{ borderColor }}>
-                          <div className="stitle">
-                            <span>
-                              {gs.label}
-                              {groupSubs.length > 1 &&
-                                <span style={{ color: "#484f58" }}> — Sub-Group {si + 1}</span>}
-                            </span>
-                            <span>
-                              {s.applyFactor          && <span className="tag">Factor ✓</span>}
-                              {s.suppressed_global    && <span className="tag r">§4.26(d) Global</span>}
-                              {s.suppressed_overflow  && <span className="tag o">Math Cap</span>}
-                              {s.oneSided             && <span className="tag b">Unpaired</span>}
-                            </span>
-                          </div>
- 
-                          {s.subset.map(d => (
-                            <div className="srow" key={d.id}>
-                              <span className="sl">{d.name} <span style={{ color: "#484f58" }}>({d.side})</span></span>
-                              <span className="sv">{d.rating}%
-                                {d.rating === 100 &&
-                                  <span style={{ fontSize: 9, color: "#f85149", marginLeft: 5 }}>← §4.26(d) trigger</span>}
-                              </span>
-                            </div>
-                          ))}
-                          <div className="srow">
-                            <span className="sl">Combined (whole-person method)</span>
-                            <span className="sv">{s.raw.toFixed(2)}%</span>
-                          </div>
- 
-                          {/* §4.26(d) Validation Block */}
-                          <div className="vblock">
-                            <div className="vtitle">§ 4.26(d) Validation — {s.applyFactor ? "All Checks Passed" : "Factor Suppressed"}</div>
- 
-                            {/* Check 1: Both sides */}
-                            <div className="vrow">
-                              <span className="vl">Check 1 — Both sides of paired extremity present?</span>
-                              <span className={`vv ${s.bothSides ? "pass" : "fail"}`}>
-                                {[...new Set(s.subset.map(d => d.side))].join(" + ")} → {s.bothSides ? "✓ PASS" : "✗ FAIL — factor N/A"}
-                              </span>
-                            </div>
- 
-                            {/* Check 2: Global 100% (§4.26(d) proper) */}
-                            <div className="vrow">
-                              <span className="vl">
-                                Check 2 — Any single disability rated 100%? (§4.26(d) rule)
-                              </span>
-                              {!s.bothSides ? (
-                                <span className="vv skip">— skipped (Check 1 failed)</span>
-                              ) : (
-                                <span className={`vv ${!s.has100Global ? "pass" : "fail"}`}>
-                                  {s.has100Global
-                                    ? "✗ FAIL — 100% disability exists → factor suppressed"
-                                    : "✓ PASS — no single 100% disability"}
-                                </span>
-                              )}
-                            </div>
- 
-                            {/* Check 3: Factor arithmetic */}
-                            <div className="vrow">
-                              <span className="vl">Check 3 — Factor arithmetic: {s.raw.toFixed(2)}% × 1.10</span>
-                              {(!s.bothSides || s.suppressed_global) ? (
-                                <span className="vv skip">— skipped</span>
-                              ) : (
-                                <span className="vv info">= {s.factored.toFixed(2)}%</span>
-                              )}
-                            </div>
- 
-                            {/* Check 4: Math cap */}
-                            <div className="vrow">
-                              <span className="vl">Check 4 — Result &lt; 100%? (mathematical cap)</span>
-                              {(!s.bothSides || s.suppressed_global) ? (
-                                <span className="vv skip">— skipped</span>
-                              ) : (
-                                <span className={`vv ${!s.overflow ? "pass" : "fail"}`}>
-                                  {s.factored.toFixed(2)}% {s.overflow ? "≥" : "<"} 100%
-                                  {" → "}{s.overflow ? "✗ FAIL — capped at 100%" : "✓ PASS"}
-                                </span>
-                              )}
-                            </div>
- 
-                            {/* Verdict */}
-                            <div className="vrow">
-                              <span className="vl" style={{ color: "#e6edf3", fontWeight: 500 }}>Verdict</span>
-                              <span className={`vv ${s.applyFactor ? "pass" : "fail"}`} style={{ fontSize: 12 }}>
-                                {s.applyFactor
-                                  ? "✓ BILATERAL FACTOR APPLIED (×1.10)"
-                                  : s.oneSided
-                                  ? "✗ NOT APPLIED — unpaired (Check 1)"
-                                  : s.suppressed_global
-                                  ? "✗ NOT APPLIED — §4.26(d) global (Check 2)"
-                                  : "✗ NOT APPLIED — math cap (Check 4)"}
-                              </span>
-                            </div>
-                          </div>
- 
-                          {/* Result rows */}
-                          {s.applyFactor && (
-                            <div className="srow" style={{ marginTop: 5 }}>
-                              <span className="sl">× 1.10 bilateral factor</span>
-                              <span className="sv">{s.eff.toFixed(2)}%</span>
-                            </div>
-                          )}
-                          {s.suppressed_overflow && (
-                            <div className="srow" style={{ marginTop: 5 }}>
-                              <span className="sl">× 1.10 (would reach {s.factored.toFixed(2)}%) → capped</span>
-                              <span className="sv">100.00%</span>
-                            </div>
-                          )}
-                          <div className="srow">
-                            <span className="sl">Rounded (nearest whole number)</span>
-                            <span className="sv g">{s.rounded}%</span>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                  </div>
-                  );
-                })}
-              </>
-            )}
- 
-            {/* ── Overall combination ── */}
-            <div className="slbl" style={{ marginBottom: 12 }}>
-              Step {1 + stepBase} — Overall Combined Rating (38 CFR § 4.25)
-            </div>
-            <div className="sblock green">
-              <div className="stitle"><span>Whole-Person Method — Sorted Highest → Lowest</span></div>
-              {opt.overall.steps.map((row, i) => (
-                <div className="srow" key={i}>
-                  <span className="sl">
-                    {row.label} <span style={{ color: "#484f58" }}>({row.value}%)</span>
-                    {row.value === 100 && data.has100Global &&
-                      <span style={{ fontSize: 9, color: "#f85149", marginLeft: 6 }}>← §4.26(d) trigger</span>}
-                  </span>
-                  <span className="sv" style={{ fontSize: 11, color: "#8b949e" }}>
-                    −{row.taken}% → {row.rem}% remaining
-                  </span>
-                </div>
-              ))}
-            </div>
- 
-            {/* ── Rounding ── */}
-            <div className="slbl" style={{ marginBottom: 12 }}>
-              Step {2 + stepBase} — Rounding (38 CFR § 4.25)
-            </div>
-            <div className="sblock">
-              <div className="srow">
-                <span className="sl">Raw combined value</span>
-                <span className="sv">{opt.overall.raw.toFixed(2)}%</span>
-              </div>
-              <div className="srow">
-                <span className="sl">Remainder from nearest 10</span>
-                <span className="sv">
-                  {(opt.overall.raw % 10).toFixed(2)} —{" "}
-                  {(opt.overall.raw % 10) >= 5 ? "≥ 5 → round up" : "< 5 → round down"}
-                </span>
-              </div>
-              <div className="srow"><span className="sl">Final combined rating</span><span className="sv g">{opt.overall.final}%</span></div>
-            </div>
- 
-            <div className="callout" style={{ marginBottom: 0, marginTop: 10 }}>
-              <strong>§4.26(d) Regulatory Basis:</strong> 38 CFR § 4.26(d) — "The bilateral factor is not applicable
-              when there is a 100 percent evaluation based on 1 disability." This is a global rule: any single disability
-              rated at 100% suppresses the bilateral factor for the entire claim. Separately, if a sub-group's combined
-              value × 1.10 would mathematically reach ≥ 100%, the result is capped at 100% — this is a mathematical
-              limit, not the §4.26(d) regulation itself.
-            </div>
-          </div>
-        )}
- 
-        <div className="note">
-          Informational only. For official ratings consult the VA or an accredited VSO/claims agent.
-          References: 38 CFR § 4.25 (combined ratings), § 4.26 (bilateral factor), § 4.26(d) (factor limitation).
-        </div>
+        <div class="step-detail">${esc(s.detail)}</div>
       </div>
-    </div>
-  );
+    </div>`;
+  }).join('');
 }
- 
 
-const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<VACalculator />);
+function renderList(res) {
+  const sorted = [...entries].sort((a, b) => b.rating - a.rating);
+  const card   = document.getElementById('listCard');
+  const list   = document.getElementById('entryList');
 
-  </script>
+  if (!entries.length) { card.style.display = 'none'; return; }
+  card.style.display = 'block';
+  document.getElementById('listTitle').textContent = 'Evaluation List (' + entries.length + ')';
+
+  list.innerHTML = sorted.map(e => {
+    const inB   = res.inBilat.some(x => x.id === e.id);
+    const exclB = res.excluded.some(x => x.id === e.id);
+    const pendB = e.bilateral && !inB && !exclB;
+    const col   = pctColor(e.rating);
+
+    if (editId === e.id) {
+      const opts = [];
+      for (let v = 100; v >= 0; v -= 10)
+        opts.push('<option value="' + v + '"' + (v === e.rating ? ' selected' : '') + '>' + v + '%</option>');
+
+      const extOpts = [
+        ['none','Non-Extremity / Other'],['upper','Upper Extremity (Arm / Hand)'],
+        ['lower','Lower Extremity (Leg / Foot)'],['muscle','Paired Skeletal Muscles'],['organ','Paired Organ'],
+      ].map(([v,l]) => '<option value="' + v + '"' + (v === e.extremity ? ' selected' : '') + '>' + l + '</option>').join('');
+
+      return `<div class="edit-block">
+        <div class="field-row">
+          <div class="field field-grow">
+            <label class="field-label">Diagnosis</label>
+            <input type="text" id="en-${e.id}" value="${esc(e.name)}" autocomplete="off">
+          </div>
+          <div class="field field-fixed">
+            <label class="field-label">Evaluation %</label>
+            <select id="ep-${e.id}">${opts.join('')}</select>
+          </div>
+        </div>
+        <label class="check-row">
+          <input type="checkbox" id="eb-${e.id}" ${e.bilateral ? 'checked' : ''} onchange="toggleExt(${e.id})">
+          <span><strong>Bilateral</strong> <span class="check-hint">— § 4.26</span></span>
+        </label>
+        <div id="ew-${e.id}" style="display:${e.bilateral ? 'block' : 'none'};margin-bottom:8px;">
+          <div class="field">
+            <label class="field-label">Extremity Type <span class="check-hint">(informational)</span></label>
+            <select id="ee-${e.id}">${extOpts}</select>
+          </div>
+        </div>
+        <div class="edit-actions">
+          <button class="btn-sm btn-save" onclick="saveEdit(${e.id})">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Save
+          </button>
+          <button class="btn-sm btn-cancel" onclick="cancelEdit()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancel
+          </button>
+          <button class="btn-sm btn-del" onclick="removeEntry(${e.id})">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg> Delete
+          </button>
+        </div>
+      </div>`;
+    }
+
+    const extLabel = e.bilateral ? (EXT_LABELS[e.extremity] || '') : '';
+    const tags = [];
+    if (inB)   tags.push('<span class="tag tag-green">BILAT ✓</span>');
+    if (exclB) tags.push('<span class="tag tag-amber">§4.26(d) EXCL</span>');
+    if (pendB) tags.push('<span class="tag tag-slate">BILAT — needs pair</span>');
+
+    return `<div class="entry-row">
+      <span class="entry-pct" style="color:${col}">${e.rating}%</span>
+      <div class="entry-info">
+        <div class="entry-name">${esc(e.name)}</div>
+        ${e.bilateral ? `<div class="entry-tags"><span class="ext-lbl">${esc(extLabel)}</span>${tags.join('')}</div>` : ''}
+      </div>
+      <button class="icon-btn icon-btn-edit" onclick="startEdit(${e.id})" title="Edit">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+      <button class="icon-btn icon-btn-del" onclick="removeEntry(${e.id})" title="Delete">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+      </button>
+    </div>`;
+  }).join('');
+}
+
+function renderBilateralHint() {
+  document.getElementById('bilateralHint').style.display =
+    entries.filter(e => e.bilateral && e.rating >= 10).length === 1 ? 'block' : 'none';
+}
+
+/* ─── ACTIONS ────────────────────────────────────────────────────────────── */
+function startEdit(id)    { editId = id;   render(); }
+function cancelEdit()     { editId = null; render(); }
+function toggleExt(id)    { document.getElementById('ew-' + id).style.display = document.getElementById('eb-' + id).checked ? 'block' : 'none'; }
+function removeEntry(id)  { entries = entries.filter(e => e.id !== id); editId = null; render(); }
+
+function saveEdit(id) {
+  const name  = document.getElementById('en-' + id).value.trim();
+  if (!name) return;
+  const bilat = document.getElementById('eb-' + id).checked;
+  entries = entries.map(e => e.id !== id ? e : {
+    ...e, name,
+    rating:    parseInt(document.getElementById('ep-' + id).value),
+    bilateral: bilat,
+    extremity: bilat ? document.getElementById('ee-' + id).value : 'none',
+  });
+  editId = null;
+  render();
+}
+
+function esc(s) {
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+render();
+</script>
+
 </body>
 </html>
