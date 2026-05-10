@@ -1,0 +1,870 @@
+!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VA Combined Rating Calculator — 38 CFR §§ 4.25–4.26</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  /* surfaces */
+  --page:      #1c2333;
+  --card:      #243044;
+  --card2:     #2a3654;
+  --input-bg:  #1c2333;
+
+  /* borders */
+  --border:    #3a4e6a;
+  --border-hi: #4e6690;
+
+  /* text */
+  --text:      #e8edf5;
+  --text-mid:  #9db0cc;
+  --text-dim:  #5a7090;
+
+  /* accents */
+  --blue:      #4d9ef5;
+  --blue-bg:   #1a3055;
+  --blue-bdr:  #2e5080;
+
+  --green:     #2ecc71;
+  --green-bg:  #0e2e1a;
+  --green-bdr: #1e6040;
+
+  --amber:     #f5a623;
+  --amber-bg:  #2e1e00;
+  --amber-bdr: #6e4400;
+
+  --red:       #e74c3c;
+  --red-bg:    #2e1010;
+  --red-bdr:   #6e2020;
+
+  --slate:     #8899aa;
+  --slate-bg:  #1e2a38;
+  --slate-bdr: #304050;
+
+  --mono: "IBM Plex Mono", monospace;
+  --sans: "DM Sans", sans-serif;
+}
+
+html { font-size: 16px; }
+body {
+  font-family: var(--sans);
+  background: var(--page);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 24px 16px 72px;
+}
+
+/* ── LAYOUT ─────────────────────────────────────────────────────────────── */
+.wrap { max-width: 720px; margin: 0 auto; }
+
+.page-header { text-align: center; margin-bottom: 22px; }
+.page-header h1 {
+  font-size: 1.55rem; font-weight: 800;
+  color: var(--text); letter-spacing: -0.02em;
+}
+.page-header p {
+  font-family: var(--mono); font-size: 0.68rem;
+  color: var(--text-dim); margin-top: 5px; letter-spacing: 0.04em;
+}
+
+/* ── CARDS ──────────────────────────────────────────────────────────────── */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 20px;
+  margin-bottom: 14px;
+}
+.card-title {
+  font-family: var(--mono);
+  font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--text-mid);
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 11px; margin-bottom: 16px;
+}
+
+/* ── SCORE HEADER ───────────────────────────────────────────────────────── */
+.score-header {
+  display: flex; align-items: stretch;
+  background: #0f1824;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  margin-bottom: 14px;
+  overflow: hidden;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.5);
+}
+
+.gauge-col {
+  flex: 0 0 auto; width: 190px;
+  background: #182030;
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  padding: 22px 16px 18px;
+}
+.gauge-svg { width: 100%; max-width: 158px; }
+
+.score-big {
+  font-family: var(--mono); font-weight: 700;
+  font-size: 3.4rem; letter-spacing: -3px; line-height: 1;
+  margin-top: -10px; transition: color 0.3s;
+}
+.score-raw {
+  font-family: var(--mono); font-size: 0.62rem;
+  color: var(--text-dim); margin-top: 5px; text-align: center;
+}
+
+.meta-col {
+  flex: 1; padding: 20px 22px 18px;
+  display: flex; flex-direction: column; gap: 13px;
+}
+.app-name {
+  font-size: 1.15rem; font-weight: 800;
+  color: var(--text); letter-spacing: -0.01em;
+}
+.cfr-ref {
+  font-family: var(--mono); font-size: 0.6rem;
+  color: var(--text-dim); margin-top: -8px; letter-spacing: 0.05em;
+}
+.stat-row { display: flex; gap: 22px; flex-wrap: wrap; }
+.stat-val {
+  font-family: var(--mono); font-size: 1.8rem; font-weight: 700;
+  color: var(--text); line-height: 1;
+}
+.stat-lbl {
+  font-family: var(--mono); font-size: 0.55rem;
+  color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; margin-top: 2px;
+}
+.stat-val.accent-amber { color: var(--amber); }
+
+.d426-badge {
+  font-family: var(--mono); font-size: 0.72rem; font-weight: 600;
+  padding: 8px 12px; border-radius: 6px; border: 1px solid;
+  line-height: 1.5;
+}
+.d426-applied    { background: var(--amber-bg); border-color: var(--amber-bdr); color: var(--amber); }
+.d426-ok         { background: var(--green-bg); border-color: var(--green-bdr); color: var(--green); }
+.d426-na         { background: var(--slate-bg); border-color: var(--slate-bdr); color: var(--slate); }
+
+/* ── CALC BREAKDOWN ─────────────────────────────────────────────────────── */
+.calc-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  margin-bottom: 14px;
+  overflow: hidden;
+}
+.calc-title {
+  font-family: var(--mono); font-size: 0.68rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.14em;
+  color: var(--text-mid);
+  padding: 11px 20px;
+  background: var(--card2);
+  border-bottom: 1px solid var(--border);
+}
+.calc-empty {
+  font-family: var(--mono); font-size: 0.78rem;
+  color: var(--text-dim); padding: 18px 20px; font-style: italic;
+}
+
+.step { display: flex; border-bottom: 1px solid var(--border); }
+.step:last-child { border-bottom: none; }
+
+.step-bar { width: 4px; flex-shrink: 0; }
+.bar-blue  { background: var(--blue); }
+.bar-green { background: var(--green); }
+.bar-amber { background: var(--amber); }
+.bar-slate { background: var(--slate); }
+.bar-red   { background: var(--red); }
+
+.step-body { flex: 1; padding: 13px 18px; }
+.step-head { display: flex; align-items: center; gap: 9px; flex-wrap: wrap; margin-bottom: 6px; }
+
+.step-label {
+  font-family: var(--mono); font-size: 0.7rem; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 0.08em;
+}
+.lbl-blue  { color: var(--blue); }
+.lbl-green { color: var(--green); }
+.lbl-amber { color: var(--amber); }
+.lbl-slate { color: var(--slate); }
+.lbl-red   { color: var(--red); }
+
+.step-detail {
+  font-family: var(--mono); font-size: 0.74rem;
+  color: var(--text-mid); line-height: 1.7; word-break: break-word;
+}
+
+/* Step row highlight for 4.26(d) */
+.row-amber { background: #1e1200; }
+.row-green { background: #0a1a10; }
+
+/* Badges */
+.badge {
+  font-family: var(--mono); font-size: 0.62rem; font-weight: 700;
+  letter-spacing: 0.09em; padding: 3px 9px;
+  border-radius: 4px; border: 1px solid; white-space: nowrap;
+}
+.bdg-amber { background: var(--amber-bg); border-color: var(--amber-bdr); color: var(--amber); }
+.bdg-green { background: var(--green-bg); border-color: var(--green-bdr); color: var(--green); }
+.bdg-slate { background: var(--slate-bg); border-color: var(--slate-bdr); color: var(--slate); }
+.bdg-red   { background: var(--red-bg);   border-color: var(--red-bdr);   color: var(--red);   }
+
+/* ── FORM ───────────────────────────────────────────────────────────────── */
+.field-row { display: flex; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.field { display: flex; flex-direction: column; gap: 5px; }
+.field-grow  { flex: 2; min-width: 0; }
+.field-fixed { flex: 0 0 118px; }
+
+.field-label {
+  font-size: 0.74rem; font-weight: 700;
+  color: var(--text-mid); letter-spacing: 0.02em;
+}
+
+input[type="text"], select, textarea {
+  background: var(--input-bg);
+  border: 1.5px solid var(--border);
+  border-radius: 7px;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 0.95rem; font-weight: 500;
+  padding: 10px 12px;
+  outline: none; width: 100%;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+input[type="text"]:focus, select:focus, textarea:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(77,158,245,0.2);
+}
+input[type="text"]::placeholder { color: var(--text-dim); }
+textarea::placeholder           { color: var(--text-dim); }
+input.err { border-color: var(--red); }
+
+.err-txt { font-size: 0.68rem; color: var(--red); font-weight: 600; }
+
+.check-row {
+  display: flex; align-items: flex-start; gap: 10px;
+  margin-bottom: 10px; cursor: pointer;
+  font-size: 0.92rem; font-weight: 500;
+  color: var(--text); line-height: 1.45;
+}
+input[type="checkbox"] {
+  width: 17px; height: 17px; margin-top: 1px;
+  accent-color: var(--blue); cursor: pointer; flex-shrink: 0;
+}
+.check-hint { color: var(--text-dim); font-size: 0.82rem; font-weight: 400; }
+
+textarea { resize: vertical; line-height: 1.65; }
+
+/* ── BUTTONS ────────────────────────────────────────────────────────────── */
+.btn {
+  font-family: var(--sans); font-weight: 700;
+  font-size: 0.9rem; padding: 11px 18px;
+  border-radius: 8px; cursor: pointer; border: none;
+  display: inline-flex; align-items: center; gap: 7px;
+  transition: filter 0.15s; letter-spacing: 0.01em;
+}
+.btn:hover  { filter: brightness(1.12); }
+.btn:active { filter: brightness(0.92); }
+
+.btn-add {
+  background: var(--blue); color: #fff;
+  width: 100%; justify-content: center; margin-top: 14px;
+  font-size: 0.95rem;
+  box-shadow: 0 2px 10px rgba(77,158,245,0.35);
+}
+.btn-copy {
+  background: #2255a0; color: var(--text);
+  flex: 1; justify-content: center;
+  border: 1.5px solid var(--blue);
+}
+.btn-copy.done { background: var(--green-bg); border-color: var(--green-bdr); color: var(--green); }
+.btn-reset {
+  background: transparent; color: var(--text-mid);
+  border: 1.5px solid var(--border);
+}
+.btn-reset:hover { color: var(--red); border-color: var(--red-bdr); background: var(--red-bg); }
+
+.action-row { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+
+/* ── ENTRY LIST ─────────────────────────────────────────────────────────── */
+.entry-row {
+  display: flex; align-items: center; gap: 11px;
+  padding: 11px 0; border-bottom: 1px solid var(--border);
+}
+.entry-row:last-child { border-bottom: none; }
+
+.entry-pct {
+  font-family: var(--mono); font-weight: 700;
+  font-size: 1.25rem; min-width: 54px;
+  flex-shrink: 0; letter-spacing: -0.5px;
+}
+.entry-info { flex: 1; min-width: 0; }
+.entry-name {
+  font-size: 0.95rem; font-weight: 600; color: var(--text);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.entry-tags { display: flex; flex-wrap: wrap; gap: 5px; margin-top: 4px; align-items: center; }
+.ext-lbl { font-family: var(--mono); font-size: 0.58rem; color: var(--text-dim); }
+
+.tag {
+  font-family: var(--mono); font-size: 0.6rem; font-weight: 700;
+  letter-spacing: 0.06em; padding: 2px 7px;
+  border-radius: 4px; border: 1px solid;
+}
+.tag-green { background: var(--green-bg); border-color: var(--green-bdr); color: var(--green); }
+.tag-amber { background: var(--amber-bg); border-color: var(--amber-bdr); color: var(--amber); }
+.tag-slate { background: var(--slate-bg); border-color: var(--slate-bdr); color: var(--slate); }
+
+.icon-btn {
+  background: var(--card2);
+  border: 1.5px solid var(--border);
+  cursor: pointer; padding: 7px; border-radius: 6px;
+  display: flex; align-items: center;
+  color: var(--text-mid); flex-shrink: 0; transition: all 0.15s;
+}
+.icon-btn-edit:hover { color: var(--blue); border-color: var(--blue-bdr); background: var(--blue-bg); }
+.icon-btn-del:hover  { color: var(--red);  border-color: var(--red-bdr);  background: var(--red-bg);  }
+
+/* ── INLINE EDIT ────────────────────────────────────────────────────────── */
+.edit-block {
+  background: var(--blue-bg);
+  border: 1.5px solid var(--blue-bdr);
+  border-radius: 8px;
+  padding: 14px; margin: 6px 0 8px;
+}
+.edit-actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.btn-sm {
+  font-family: var(--sans); font-weight: 700; font-size: 0.82rem;
+  padding: 7px 14px; border-radius: 6px; cursor: pointer; border: 1.5px solid;
+  display: inline-flex; align-items: center; gap: 5px; transition: filter 0.15s;
+}
+.btn-sm:hover { filter: brightness(1.15); }
+.btn-save   { background: var(--green-bg); border-color: var(--green-bdr); color: var(--green); }
+.btn-cancel { background: transparent;     border-color: var(--border);    color: var(--text-mid); }
+.btn-del    { background: var(--red-bg);   border-color: var(--red-bdr);   color: var(--red); margin-left: auto; }
+
+/* ── INFO BOX ───────────────────────────────────────────────────────────── */
+.info-box {
+  font-family: var(--mono); font-size: 0.7rem;
+  color: var(--blue); background: var(--blue-bg);
+  border: 1px solid var(--blue-bdr);
+  border-radius: 7px; padding: 9px 12px;
+  line-height: 1.6; margin-top: 12px;
+}
+
+/* ── REGULATORY LEGEND ──────────────────────────────────────────────────── */
+.leg-row { display: flex; gap: 12px; margin-bottom: 9px; align-items: flex-start; }
+.leg-row:last-child { margin-bottom: 0; }
+.leg-cite {
+  font-family: var(--mono); font-size: 0.65rem; font-weight: 700;
+  color: var(--blue); min-width: 68px; flex-shrink: 0;
+  letter-spacing: 0.03em; padding-top: 1px;
+}
+.leg-text { font-size: 0.8rem; color: var(--text-mid); line-height: 1.6; }
+
+/* ── FOOTER ─────────────────────────────────────────────────────────────── */
+.footer {
+  text-align: center; font-family: var(--mono);
+  font-size: 0.6rem; color: var(--text-dim);
+  margin-top: 12px; line-height: 1.8; letter-spacing: 0.03em;
+}
+
+@media (max-width: 500px) {
+  .gauge-col { width: 145px; }
+  .score-big { font-size: 2.6rem; }
+  .field-fixed { flex: 0 0 95px; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="page-header">
+    <h1>VA Combined Rating Calculator</h1>
+    <p>38 CFR §§ 4.25 – 4.26 &nbsp;·&nbsp; as amended 88 FR 22917 (Apr 14, 2023)</p>
+  </div>
+
+  <!-- ══ SCORE HEADER ══════════════════════════════════════════════════════ -->
+  <div class="score-header">
+    <div class="gauge-col">
+      <svg class="gauge-svg" viewBox="0 0 160 90">
+        <path d="M8,80 A72,72 0 0,1 152,80" fill="none" stroke="#243044" stroke-width="13" stroke-linecap="round"/>
+        <path id="gaugeFill" d="M8,80 A72,72 0 0,1 152,80" fill="none" stroke="#2ecc71"
+              stroke-width="13" stroke-linecap="round" stroke-dasharray="0 226"
+              style="transition:stroke-dasharray .4s ease,stroke .4s ease"/>
+        <line id="gaugeNeedle" x1="80" y1="80" x2="80" y2="16"
+              stroke="rgba(255,255,255,0.85)" stroke-width="2.5" stroke-linecap="round"
+              style="transform-origin:80px 80px;transform:rotate(-90deg);transition:transform .4s ease"/>
+        <circle cx="80" cy="80" r="5" fill="white"/>
+      </svg>
+      <div class="score-big" id="scoreBig" style="color:#2ecc71">0%</div>
+      <div class="score-raw" id="scoreRaw">raw 0.0000%</div>
+    </div>
+
+    <div class="meta-col">
+      <div>
+        <div class="app-name">Combined Rating</div>
+        <div class="cfr-ref">38 CFR §§ 4.25–4.26 &nbsp;·&nbsp; 88 FR 22917</div>
+      </div>
+      <div class="stat-row">
+        <div>
+          <div class="stat-val" id="statConds">0</div>
+          <div class="stat-lbl">Conditions</div>
+        </div>
+        <div>
+          <div class="stat-val" id="statBilat">0</div>
+          <div class="stat-lbl">In Bilat Group</div>
+        </div>
+        <div>
+          <div class="stat-val" id="statExcl">0</div>
+          <div class="stat-lbl">§4.26(d) Excl</div>
+        </div>
+      </div>
+      <div id="d426Badge" class="d426-badge d426-na" style="display:none"></div>
+    </div>
+  </div>
+
+  <!-- ══ CALCULATION BREAKDOWN ═════════════════════════════════════════════ -->
+  <div class="calc-card">
+    <div class="calc-title">Calculation Breakdown</div>
+    <div id="calcSteps">
+      <div class="calc-empty">Add conditions below to see the step-by-step calculation.</div>
+    </div>
+  </div>
+
+  <!-- ══ ADD RATING ════════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">Add Disability Rating</div>
+    <div class="field-row">
+      <div class="field field-grow">
+        <label class="field-label" for="diagName">Diagnosis / Condition</label>
+        <input type="text" id="diagName" placeholder="e.g. Right Knee Strain" autocomplete="off">
+        <div class="err-txt" id="nameErr" style="display:none">Diagnosis name is required.</div>
+      </div>
+      <div class="field field-fixed">
+        <label class="field-label" for="diagPct">Evaluation %</label>
+        <select id="diagPct"></select>
+      </div>
+    </div>
+
+    <label class="check-row">
+      <input type="checkbox" id="isBilateral">
+      <span><strong>Bilateral condition</strong>
+        <span class="check-hint"> — paired extremity or skeletal muscle (§ 4.26)</span></span>
+    </label>
+
+    <div id="extremityWrap" style="display:none;margin-bottom:10px;">
+      <div class="field">
+        <label class="field-label" for="extremityType">Extremity Type <span class="check-hint">(informational)</span></label>
+        <select id="extremityType">
+          <option value="none">Non-Extremity / Other</option>
+          <option value="upper">Upper Extremity (Arm / Hand)</option>
+          <option value="lower">Lower Extremity (Leg / Foot)</option>
+          <option value="muscle">Paired Skeletal Muscles</option>
+          <option value="organ">Paired Organ</option>
+        </select>
+      </div>
+    </div>
+
+    <button class="btn btn-add" id="btnAdd">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Add to Evaluation
+    </button>
+
+    <div class="info-box" id="bilateralHint" style="display:none">
+      § 4.26(c): bilateral factor requires a compensable (≥ 10%) rating in <em>each</em>
+      of the 2 paired extremities. Add the partner condition to activate.
+    </div>
+  </div>
+
+  <!-- ══ EVALUATION LIST ═══════════════════════════════════════════════════ -->
+  <div class="card" id="listCard" style="display:none">
+    <div class="card-title" id="listTitle">Evaluation List</div>
+    <div id="entryList"></div>
+  </div>
+
+  <!-- ══ NEXUS NOTES ═══════════════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">Nexus Strategy &amp; Advocacy Notes</div>
+    <textarea id="nexusNotes" rows="5"
+      placeholder="Document medical nexus, VASRD diagnostic codes met, DBQ findings, IMO/IME language, buddy statements, continuity of care..."></textarea>
+    <div class="action-row">
+      <button class="btn btn-copy" id="btnCopy">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>
+        Copy Claim Strategy
+      </button>
+      <button class="btn btn-reset" id="btnReset">Reset All</button>
+    </div>
+  </div>
+
+  <!-- ══ REGULATORY REFERENCE ══════════════════════════════════════════════ -->
+  <div class="card">
+    <div class="card-title">Regulatory Reference — 38 CFR § 4.26</div>
+    <div class="leg-row"><span class="leg-cite">§ 4.25</span><span class="leg-text">Whole-person combination. Rounding is two-step: decimal → whole number (≥ 0.5 rounds up) → nearest 10 (5 rounds up). Single-step rounding produces wrong results.</span></div>
+    <div class="leg-row"><span class="leg-cite">§ 4.26</span><span class="leg-text">Combine bilateral conditions highest-to-lowest, then ADD (not combine) 10% of that combined value. Treat result as one disability for further combination.</span></div>
+    <div class="leg-row"><span class="leg-cite">§ 4.26(b)</span><span class="leg-text">Four-extremity rule: both upper AND lower bilateral pairs combine in one group with one 10% bonus.</span></div>
+    <div class="leg-row"><span class="leg-cite">§ 4.26(c)</span><span class="leg-text">Bilateral factor requires a compensable (≥ 10%) rating in each of the 2 paired extremities.</span></div>
+    <div class="leg-row"><span class="leg-cite">§ 4.26(d)</span><span class="leg-text">Exception (eff. Apr 16 2023): VA must automatically exclude bilateral conditions from the group when doing so yields a higher rating. This calculator tests all 2ⁿ subsets to find the optimal configuration.</span></div>
+  </div>
+
+  <div class="footer">
+    38 CFR §§ 4.25–4.26 as amended 88 FR 22917 (Apr 14, 2023)<br>
+    NOT a substitute for accredited VSO, claims agent, or attorney advice.
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════════════════════════
+   CALCULATION ENGINE  38 CFR §§ 4.25–4.26
+   ═══════════════════════════════════════════════════════════════════════════ */
+function combineWholePerson(ratings) {
+  let rem = 100, tot = 0;
+  for (const r of ratings) { const c = rem*(r/100); tot+=c; rem-=c; }
+  return tot;
+}
+
+// § 4.25 two-step rounding (single-step is wrong for e.g. 74.5 → gives 70, correct is 80)
+function vaRound(raw) { return Math.round(Math.round(raw)/10)*10; }
+
+function scoreScenario(inBilat, poolRest) {
+  const q = inBilat.filter(e=>e.rating>=10);
+  const pool = poolRest.map(e=>e.rating);
+  let bilateralApplied=false, groupRaw=0, groupFinal=0;
+  if (q.length>=2) {
+    bilateralApplied=true;
+    const s=[...q].sort((a,b)=>b.rating-a.rating);
+    groupRaw=combineWholePerson(s.map(e=>e.rating));
+    groupFinal=groupRaw*1.10;
+    pool.push(groupFinal);
+    inBilat.filter(e=>e.rating<10).forEach(e=>pool.push(e.rating));
+  } else { inBilat.forEach(e=>pool.push(e.rating)); }
+  pool.sort((a,b)=>b-a);
+  return { raw:combineWholePerson(pool), bilateralApplied, groupRaw, groupFinal,
+           qualRatings:q.map(e=>e.rating).sort((a,b)=>b-a) };
+}
+
+function calculate(entries) {
+  if (!entries.length) return {raw:0,rounded:0,bilateralApplied:false,
+    d426Applied:false,d426Tested:false,inBilat:[],excluded:[],steps:[]};
+
+  const bilat=entries.filter(e=>e.bilateral);
+  const nonB =entries.filter(e=>!e.bilateral);
+
+  if (!bilat.length) {
+    const sorted=[...entries].sort((a,b)=>b.rating-a.rating);
+    const raw=combineWholePerson(sorted.map(e=>e.rating));
+    return {raw,rounded:vaRound(raw),bilateralApplied:false,
+      d426Applied:false,d426Tested:false,inBilat:[],excluded:[],
+      steps:makeSteps({bilateralApplied:false,d426Applied:false,d426Tested:false,
+        noBilateral:true,raw,nonBilateral:entries,excluded:[],result:null,
+        fullGroupRounded:null,subsets:0})};
+  }
+
+  // § 4.26(d) — enumerate 2^n subsets, optimise over ROUNDED rating
+  const n=bilat.length;
+  let bestRaw=-1,bestRounded=-1,bestMask=(1<<n)-1;
+  for (let mask=0;mask<(1<<n);mask++) {
+    const inB =bilat.filter((_,i)=>(mask>>i)&1);
+    const outB=bilat.filter((_,i)=>!((mask>>i)&1));
+    const {raw}=scoreScenario(inB,[...nonB,...outB]);
+    const rounded=vaRound(raw);
+    if (rounded>bestRounded||(rounded===bestRounded&&raw>bestRaw))
+      {bestRaw=raw;bestRounded=rounded;bestMask=mask;}
+  }
+
+  const inBilat =bilat.filter((_,i)=> (bestMask>>i)&1);
+  const excluded=bilat.filter((_,i)=>!((bestMask>>i)&1));
+  const best    =scoreScenario(inBilat,[...nonB,...excluded]);
+  const fullGrp =scoreScenario(bilat,nonB);
+  const fullGroupRounded=vaRound(fullGrp.raw);
+  const d426Applied=excluded.length>0&&vaRound(best.raw)>fullGroupRounded;
+
+  return {raw:best.raw,rounded:vaRound(best.raw),
+    bilateralApplied:best.bilateralApplied,d426Applied,d426Tested:true,
+    inBilat,excluded,
+    steps:makeSteps({bilateralApplied:best.bilateralApplied,d426Applied,
+      d426Tested:true,noBilateral:false,raw:best.raw,nonBilateral:nonB,
+      excluded,result:best,fullGroupRounded,subsets:1<<n})};
+}
+
+function makeSteps({bilateralApplied,d426Applied,d426Tested,noBilateral,
+                    raw,nonBilateral,excluded,result,fullGroupRounded,subsets}) {
+  const steps=[];
+
+  if (bilateralApplied&&result)
+    steps.push({bar:'bar-blue',lbl:'lbl-blue',
+      label:'§ 4.26  —  Bilateral Group',badge:null,row:'',
+      detail:result.qualRatings.map(r=>r+'%').join(' + ')
+        +'  →  combined '+result.groupRaw.toFixed(4)+'%'
+        +'  →  ADD 10% bonus  =  '+result.groupFinal.toFixed(4)+'%'});
+
+  if (!d426Tested||noBilateral)
+    steps.push({bar:'bar-slate',lbl:'lbl-slate',
+      label:'§ 4.26(d)  —  Exception',
+      badge:{cls:'bdg-slate',txt:'N/A'},row:'',
+      detail:'No bilateral conditions entered. § 4.26 does not apply.'});
+  else if (d426Applied)
+    steps.push({bar:'bar-amber',lbl:'lbl-amber',
+      label:'§ 4.26(d)  —  Exception',
+      badge:{cls:'bdg-amber',txt:'APPLIED'},row:'row-amber',
+      detail:subsets+' configurations tested. Excluded from bilateral group: '
+        +excluded.map(e=>e.name+' ('+e.rating+'%)').join(', ')+'. '
+        +'Standard group → '+fullGroupRounded+'% rated. '
+        +'After exclusion → '+vaRound(raw)+'% rated. '
+        +'Net gain: +'+(vaRound(raw)-fullGroupRounded)+'%.'});
+  else if (bilateralApplied)
+    steps.push({bar:'bar-green',lbl:'lbl-green',
+      label:'§ 4.26(d)  —  Exception',
+      badge:{cls:'bdg-green',txt:'NOT REQUIRED'},row:'row-green',
+      detail:subsets+' configurations tested. Standard bilateral group already yields '
+        +'the highest outcome ('+fullGroupRounded+'%). No exclusion beneficial.'});
+  else
+    steps.push({bar:'bar-red',lbl:'lbl-red',
+      label:'§ 4.26(d)  —  Exception',
+      badge:{cls:'bdg-red',txt:'§ 4.26(c) NOT MET'},row:'',
+      detail:'Bilateral factor requires ≥ 2 compensable (≥ 10%) conditions. '
+        +'Fewer than 2 qualifying bilateral entries entered.'});
+
+  const parts=[];
+  if (bilateralApplied&&result) parts.push(result.groupFinal.toFixed(2)+'%  (bilateral group)');
+  [...nonBilateral,...excluded].sort((a,b)=>b.rating-a.rating)
+    .forEach(e=>parts.push(e.rating+'%  ('+e.name+')'));
+  steps.push({bar:'bar-blue',lbl:'lbl-blue',
+    label:'§ 4.25  —  Whole-Person Combination  (highest → lowest)',
+    badge:null,row:'',
+    detail:parts.join('  →  ')+'  =  '+raw.toFixed(4)+'%'});
+
+  steps.push({bar:'bar-green',lbl:'lbl-green',
+    label:'§ 4.25  —  Rounding  (two-step)',
+    badge:null,row:'',
+    detail:raw.toFixed(4)+'%  →  whole: '+Math.round(raw)
+      +'%  →  nearest 10: '+vaRound(raw)+'%  =  Final Rating'});
+
+  return steps;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STATE & RENDER
+   ═══════════════════════════════════════════════════════════════════════════ */
+let entries=[], editId=null;
+
+const EXT_LABELS={none:'',upper:'Upper Extremity',lower:'Lower Extremity',
+                   muscle:'Paired Skeletal Muscles',organ:'Paired Organ'};
+
+// Populate % dropdown
+const pctEl=document.getElementById('diagPct');
+for (let v=100;v>=0;v-=10) {
+  const o=document.createElement('option');
+  o.value=v; o.textContent=v+'%'; if(v===30)o.selected=true; pctEl.appendChild(o);
+}
+
+document.getElementById('isBilateral').addEventListener('change',function(){
+  document.getElementById('extremityWrap').style.display=this.checked?'block':'none';
+});
+
+document.getElementById('btnAdd').addEventListener('click',addEntry);
+document.getElementById('diagName').addEventListener('keydown',e=>{if(e.key==='Enter')addEntry();});
+
+function addEntry(){
+  const el=document.getElementById('diagName');
+  const name=el.value.trim();
+  if(!name){el.classList.add('err');document.getElementById('nameErr').style.display='block';return;}
+  el.classList.remove('err');document.getElementById('nameErr').style.display='none';
+  entries.push({id:Date.now(),name,
+    rating:parseInt(document.getElementById('diagPct').value),
+    bilateral:document.getElementById('isBilateral').checked,
+    extremity:document.getElementById('extremityType').value});
+  el.value='';
+  document.getElementById('isBilateral').checked=false;
+  document.getElementById('extremityWrap').style.display='none';
+  document.getElementById('extremityType').value='none';
+  render();
+}
+
+document.getElementById('btnCopy').addEventListener('click',function(){
+  const res=calculate(entries);
+  const list=entries.map(e=>{
+    const ex=res.excluded.some(x=>x.id===e.id);
+    const tag=e.bilateral?(ex?'  [BILAT — §4.26(d) EXCL]':'  [BILATERAL]'):'';
+    return '  '+String(e.rating).padStart(3)+'%  '+e.name+tag;
+  }).join('\n');
+  const text=[
+    'VA COMBINED RATING EVALUATION','='.repeat(50),
+    'Final Combined Rating   : '+res.rounded+'%',
+    'Unrounded Raw           : '+res.raw.toFixed(4)+'%',
+    'Bilateral Factor (§4.26): '+(res.bilateralApplied?'Applied':'Not applicable'),
+    '§ 4.26(d) Exception     : '+(res.d426Applied?'APPLIED':res.d426Tested?'Not required':'N/A'),
+    '','RATED CONDITIONS:',list||'  (none)','',
+    'CALCULATION STEPS:',
+    ...res.steps.map(s=>'  ['+s.label+(s.badge?' — '+s.badge.txt:'')+']'+'\n  '+s.detail),
+    '','NEXUS STRATEGY & NOTES:',
+    document.getElementById('nexusNotes').value||'  (none)','',
+    'Calculated per 38 CFR §§ 4.25–4.26 (as amended 88 FR 22917, Apr 14 2023)',
+    'NOT a substitute for accredited VSO or attorney advice.',
+  ].join('\n');
+  navigator.clipboard.writeText(text).then(()=>{
+    const btn=document.getElementById('btnCopy');
+    btn.classList.add('done');
+    btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Copied!';
+    setTimeout(()=>{
+      btn.classList.remove('done');
+      btn.innerHTML='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Copy Claim Strategy';
+    },2500);
+  });
+});
+
+document.getElementById('btnReset').addEventListener('click',()=>{
+  if(!entries.length&&!document.getElementById('nexusNotes').value)return;
+  if(confirm('Clear all entries and notes?')){entries=[];editId=null;document.getElementById('nexusNotes').value='';render();}
+});
+
+/* ── RENDER ─────────────────────────────────────────────────────────────── */
+function render(){
+  const res=calculate(entries);
+  renderGauge(res); renderStats(res); renderD426(res); renderSteps(res); renderList(res);
+  document.getElementById('bilateralHint').style.display=
+    entries.filter(e=>e.bilateral&&e.rating>=10).length===1?'block':'none';
+}
+
+function pctColor(r){
+  if(r>=70)return'#e74c3c'; if(r>=50)return'#f5a623';
+  if(r>=30)return'#f5d623'; return'#2ecc71';
+}
+
+function renderGauge(res){
+  const col=pctColor(res.rounded);
+  const len=((res.raw/100)*226).toFixed(2);
+  const deg=(res.raw/100)*180-90;
+  document.getElementById('gaugeFill').setAttribute('stroke',col);
+  document.getElementById('gaugeFill').setAttribute('stroke-dasharray',len+' 226');
+  document.getElementById('gaugeNeedle').style.transform='rotate('+deg+'deg)';
+  document.getElementById('scoreBig').textContent=res.rounded+'%';
+  document.getElementById('scoreBig').style.color=col;
+  document.getElementById('scoreRaw').textContent='raw '+res.raw.toFixed(4)+'%';
+}
+
+function renderStats(res){
+  document.getElementById('statConds').textContent=entries.length;
+  document.getElementById('statBilat').textContent=res.inBilat.length;
+  const el=document.getElementById('statExcl');
+  el.textContent=res.excluded.length;
+  el.className='stat-val'+(res.d426Applied&&res.excluded.length?' accent-amber':'');
+}
+
+function renderD426(res){
+  const el=document.getElementById('d426Badge');
+  if(!res.d426Tested){el.style.display='none';return;}
+  el.style.display='block';
+  el.className='d426-badge '+(res.d426Applied?'d426-applied':'d426-ok');
+  el.innerHTML=res.d426Applied
+    ?'<strong>§ 4.26(d) APPLIED</strong> — '+esc(res.excluded.map(e=>e.name).join(', '))+' excluded from bilateral group'
+    :'<strong>§ 4.26(d) NOT REQUIRED</strong> — standard bilateral group is already optimal';
+}
+
+function renderSteps(res){
+  const el=document.getElementById('calcSteps');
+  if(!res.steps.length){
+    el.innerHTML='<div class="calc-empty">Add conditions below to see the step-by-step calculation.</div>';return;
+  }
+  el.innerHTML=res.steps.map(s=>`
+    <div class="step ${s.row}">
+      <div class="step-bar ${s.bar}"></div>
+      <div class="step-body">
+        <div class="step-head">
+          <span class="step-label ${s.lbl}">${s.label}</span>
+          ${s.badge?'<span class="badge '+s.badge.cls+'">'+s.badge.txt+'</span>':''}
+        </div>
+        <div class="step-detail">${esc(s.detail)}</div>
+      </div>
+    </div>`).join('');
+}
+
+function renderList(res){
+  const sorted=[...entries].sort((a,b)=>b.rating-a.rating);
+  const card=document.getElementById('listCard');
+  if(!entries.length){card.style.display='none';return;}
+  card.style.display='block';
+  document.getElementById('listTitle').textContent='Evaluation List ('+entries.length+')';
+
+  document.getElementById('entryList').innerHTML=sorted.map(e=>{
+    const inB=res.inBilat.some(x=>x.id===e.id);
+    const exB=res.excluded.some(x=>x.id===e.id);
+    const pend=e.bilateral&&!inB&&!exB;
+    const col=pctColor(e.rating);
+
+    if(editId===e.id){
+      const opts=[]; for(let v=100;v>=0;v-=10) opts.push('<option value="'+v+'"'+(v===e.rating?' selected':'')+'>'+v+'%</option>');
+      const eOpts=[['none','Non-Extremity / Other'],['upper','Upper Extremity (Arm / Hand)'],
+        ['lower','Lower Extremity (Leg / Foot)'],['muscle','Paired Skeletal Muscles'],['organ','Paired Organ']]
+        .map(([v,l])=>'<option value="'+v+'"'+(v===e.extremity?' selected':'')+'>'+l+'</option>').join('');
+      return `<div class="edit-block">
+        <div class="field-row">
+          <div class="field field-grow"><label class="field-label">Diagnosis</label>
+            <input type="text" id="en-${e.id}" value="${esc(e.name)}" autocomplete="off"></div>
+          <div class="field field-fixed"><label class="field-label">Evaluation %</label>
+            <select id="ep-${e.id}">${opts.join('')}</select></div>
+        </div>
+        <label class="check-row">
+          <input type="checkbox" id="eb-${e.id}" ${e.bilateral?'checked':''} onchange="toggleExt(${e.id})">
+          <span><strong>Bilateral</strong> <span class="check-hint">— § 4.26</span></span>
+        </label>
+        <div id="ew-${e.id}" style="display:${e.bilateral?'block':'none'};margin-bottom:8px;">
+          <div class="field"><label class="field-label">Extremity Type <span class="check-hint">(informational)</span></label>
+            <select id="ee-${e.id}">${eOpts}</select></div>
+        </div>
+        <div class="edit-actions">
+          <button class="btn-sm btn-save" onclick="saveEdit(${e.id})">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg> Save</button>
+          <button class="btn-sm btn-cancel" onclick="cancelEdit()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Cancel</button>
+          <button class="btn-sm btn-del" onclick="removeEntry(${e.id})">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg> Delete</button>
+        </div></div>`;
+    }
+
+    const extLbl=e.bilateral?(EXT_LABELS[e.extremity]||''):'';
+    const tags=[];
+    if(inB)  tags.push('<span class="tag tag-green">BILAT ✓</span>');
+    if(exB)  tags.push('<span class="tag tag-amber">§4.26(d) EXCL</span>');
+    if(pend) tags.push('<span class="tag tag-slate">BILAT — needs pair</span>');
+
+    return `<div class="entry-row">
+      <span class="entry-pct" style="color:${col}">${e.rating}%</span>
+      <div class="entry-info">
+        <div class="entry-name">${esc(e.name)}</div>
+        ${e.bilateral?`<div class="entry-tags"><span class="ext-lbl">${esc(extLbl)}</span>${tags.join('')}</div>`:''}
+      </div>
+      <button class="icon-btn icon-btn-edit" onclick="startEdit(${e.id})" title="Edit">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      </button>
+      <button class="icon-btn icon-btn-del" onclick="removeEntry(${e.id})" title="Delete">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6M14 11v6M9 6V4h6v2"/></svg>
+      </button></div>`;
+  }).join('');
+}
+
+function startEdit(id){editId=id;render();}
+function cancelEdit(){editId=null;render();}
+function toggleExt(id){document.getElementById('ew-'+id).style.display=document.getElementById('eb-'+id).checked?'block':'none';}
+function removeEntry(id){entries=entries.filter(e=>e.id!==id);editId=null;render();}
+function saveEdit(id){
+  const name=document.getElementById('en-'+id).value.trim(); if(!name)return;
+  const bilat=document.getElementById('eb-'+id).checked;
+  entries=entries.map(e=>e.id!==id?e:{...e,name,
+    rating:parseInt(document.getElementById('ep-'+id).value),bilateral:bilat,
+    extremity:bilat?document.getElementById('ee-'+id).value:'none'});
+  editId=null;render();
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');}
+
+render();
+</script>
+</body>
+</html>
